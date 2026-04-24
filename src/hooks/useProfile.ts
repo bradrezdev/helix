@@ -12,6 +12,7 @@ export interface UserProfile {
   enrollment_date: string
   created_at: string
   link_referido: string | null
+  is_admin: boolean | null
 }
 
 export interface SponsorProfile {
@@ -24,12 +25,12 @@ export interface SponsorProfile {
 }
 
 export function useProfile(userId: string) {
-  return useQuery({
+  const query = useQuery({
     queryKey: ['profile', userId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('users')
-        .select('id, user_id, name, apellidos, email, rank, sponsor_id, enrollment_date, created_at, link_referido')
+        .select('id, user_id, name, apellidos, email, rank, sponsor_id, enrollment_date, created_at, link_referido, is_admin')
         .eq('id', userId)
         .single()
       if (error) throw error
@@ -38,6 +39,13 @@ export function useProfile(userId: string) {
     enabled: !!userId,
     staleTime: 5 * 60 * 1000,
   })
+  return {
+    data: query.data,
+    profile: query.data,
+    loading: query.isLoading,
+    isLoading: query.isLoading,
+    error: query.error,
+  }
 }
 
 export function useSponsor(sponsorId: string | null | undefined) {

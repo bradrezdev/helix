@@ -8,6 +8,8 @@ export interface DashboardData {
   total_commissions_month: number
   active_directs: number
   fidelity_points: number
+  days_left_in_month: number | null
+  holding_tank_count: number
 }
 
 export async function getDashboard(userId: string): Promise<DashboardData> {
@@ -38,7 +40,9 @@ export async function getDashboard(userId: string): Promise<DashboardData> {
     personal_pv: row.month_pv ?? row.profile?.personal_pv ?? 0,
     personal_cv: row.profile?.personal_cv ?? 0,
     total_commissions_month: row.total_commissions_month ?? 0,
-    active_directs: row.active_directs ?? row.profile?.active_directs ?? 0,
+    active_directs: row.active_directs ?? 0,
     fidelity_points: row.fidelity_points ?? row.profile?.fidelity_points ?? 0,
+    days_left_in_month: row.days_left_in_month ?? null,
+    holding_tank_count: row.holding_tank_count ?? 0,
   } as DashboardData
 }

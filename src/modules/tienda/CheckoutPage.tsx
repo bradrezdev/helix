@@ -16,7 +16,6 @@ type ShippingOption = 'nueva' | 'default' | 'cedi' | null
 
 interface OrderResult {
   order_id: string
-  external_id: string
   status: string
 }
 
@@ -122,7 +121,7 @@ export function CheckoutPage() {
           ¡Orden confirmada!
         </h2>
         <p className="text-sm mb-1" style={{ color: '#6B7280', fontFamily: 'Poppins, sans-serif' }}>
-          {orderResult.external_id}
+          Orden #{orderResult.order_id}
         </p>
         <p className="text-xs mb-8" style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}>
           Estado: {orderResult.status === 'paid' ? 'Pagado ✓' : 'Pendiente'}

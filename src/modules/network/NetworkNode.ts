@@ -5,6 +5,8 @@ export interface NetworkNode {
   rank: string
   isActive: boolean
   personalCv: number
+  personalPv: number
+  groupVg: number
   kitType: string | null
   levelDepth: number
 }

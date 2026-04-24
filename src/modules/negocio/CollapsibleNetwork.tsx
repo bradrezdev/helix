@@ -1,9 +1,32 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { OrgChartTree } from '../network/OrgChartTree'
 import { useUnivelTree, useSponsorTree, useNetworkStats } from '../network/useNetwork'
 import type { NetworkNode, TreeType } from '../network/NetworkNode'
 import { cn } from '../../lib/utils'
+
+const RANK_IMAGES: Record<string, string> = {
+  Bronce: '/rangos/bronce.png',
+  Plata: '/rangos/plata.png',
+  Oro: '/rangos/oro.png',
+  Platino: '/rangos/platino.png',
+  Diamante: '/rangos/diamond.png',
+  'Doble Diamante': '/rangos/double-diamond.png',
+  'Triple Diamante': '/rangos/triple-diamond.png',
+}
+
+function getMembershipLabel(node: NetworkNode): string {
+  if (node.kitType === 'cliente_preferente') return 'Cliente Preferente'
+  if (node.rank === 'Socio' || node.personalPv < 100) return 'Socio'
+  return node.rank
+}
+
+const InfoRow = ({ label, value }: { label: string; value: string }) => (
+  <div className="flex justify-between items-center py-2 border-b border-gray-50">
+    <span className="text-sm text-gray-500">{label}</span>
+    <span className="text-sm font-medium text-gray-900">{value}</span>
+  </div>
+)
 
 interface CollapsibleNetworkProps {
   userId: string
@@ -24,8 +47,8 @@ function TabButton({
       className={cn(
         'px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200',
         active
-          ? 'bg-white text-[#062A63] shadow-sm'
-          : 'text-gray-400 hover:text-gray-600'
+          ? 'bg-[#062A63] text-white shadow-sm'
+          : 'text-gray-500 hover:text-gray-700'
       )}
     >
       {label}
@@ -45,7 +68,14 @@ function LoadingSpinner() {
 export function CollapsibleNetwork({ userId }: CollapsibleNetworkProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [activeTree, setActiveTree] = useState<TreeType>('unilevel')
-  const [, setSelectedNode] = useState<NetworkNode | null>(null)
+  const [bottomSheetNode, setBottomSheetNode] = useState<NetworkNode | null>(null)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
 
   const univelQuery = useUnivelTree(userId, 3)
   const sponsorQuery = useSponsorTree(userId, 3)
@@ -59,6 +89,12 @@ export function CollapsibleNetwork({ userId }: CollapsibleNetworkProps) {
   const stats = statsQuery.data
   const totalMembers = stats?.unilevel_total ?? 0
   const activeCount = stats?.active_count ?? 0
+
+  function handleNodeClick(node: NetworkNode) {
+    if (isMobile) {
+      setBottomSheetNode(node)
+    }
+  }
 
   return (
     <div className="bg-white rounded-[32px] border border-[#EAECF0] shadow-sm overflow-hidden">
@@ -93,24 +129,24 @@ export function CollapsibleNetwork({ userId }: CollapsibleNetworkProps) {
           isExpanded ? 'max-h-[520px] opacity-100' : 'max-h-0 opacity-0'
         )}
       >
-        {/* Tab switcher */}
-        <div className="flex items-center justify-end px-4 pb-3">
-          <div className="flex bg-gray-100 rounded-full p-1 gap-1">
-            <TabButton
-              label="Uninivel"
-              active={activeTree === 'unilevel'}
-              onClick={() => setActiveTree('unilevel')}
-            />
-            <TabButton
-              label="Patrocinio"
-              active={activeTree === 'sponsor'}
-              onClick={() => setActiveTree('sponsor')}
-            />
-          </div>
-        </div>
-
-        {/* Chart */}
+        {/* Chart — relative container with tabs inside */}
         <div className="h-[420px] relative border-t border-[#EAECF0]">
+          {/* Tab switcher — inside chart, top-center */}
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
+            <div className="bg-white/90 backdrop-blur-sm rounded-full shadow-md px-1 py-1 flex gap-1">
+              <TabButton
+                label="Uninivel"
+                active={activeTree === 'unilevel'}
+                onClick={() => setActiveTree('unilevel')}
+              />
+              <TabButton
+                label="Patrocinio"
+                active={activeTree === 'sponsor'}
+                onClick={() => setActiveTree('sponsor')}
+              />
+            </div>
+          </div>
+
           {isLoading && <LoadingSpinner />}
 
           {!isLoading && currentNodes.length === 0 && (
@@ -126,8 +162,68 @@ export function CollapsibleNetwork({ userId }: CollapsibleNetworkProps) {
             <OrgChartTree
               nodes={currentNodes}
               treeType={activeTree}
-              onNodeClick={setSelectedNode}
+              onNodeClick={handleNodeClick}
             />
+          )}
+
+          {/* Mobile Bottom Sheet */}
+          {isMobile && (
+            <div
+              style={{ transform: bottomSheetNode ? 'translateY(0)' : 'translateY(100%)' }}
+              className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl z-20 transition-transform duration-300 ease-out"
+            >
+              <div className="flex justify-center pt-3 pb-2">
+                <div className="w-10 h-1 bg-gray-200 rounded-full" />
+              </div>
+              <button
+                onClick={() => setBottomSheetNode(null)}
+                className="absolute top-3 right-4 text-gray-400"
+              >✕</button>
+
+              {bottomSheetNode && (
+                <div className="px-5 pb-6 space-y-3 max-h-[60vh] overflow-y-auto">
+                  <div className="flex items-center gap-3 mb-4">
+                    {RANK_IMAGES[bottomSheetNode.rank] ? (
+                      <img
+                        src={RANK_IMAGES[bottomSheetNode.rank]}
+                        className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-[#062A63] flex items-center justify-center flex-shrink-0">
+                        <span className="text-white text-lg font-semibold">
+                          {bottomSheetNode.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <div>
+                      <div className="font-semibold text-gray-900 text-base">{bottomSheetNode.name}</div>
+                      <div className="text-sm text-gray-500">{getMembershipLabel(bottomSheetNode)}</div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-gray-50 rounded-xl p-3 text-center">
+                      <div className="text-xs text-gray-400">PV</div>
+                      <div className="text-lg font-bold text-[#062A63]">{bottomSheetNode.personalPv}</div>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-3 text-center">
+                      <div className="text-xs text-gray-400">CV</div>
+                      <div className="text-lg font-bold text-[#062A63]">{bottomSheetNode.personalCv}</div>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-3 text-center">
+                      <div className="text-xs text-gray-400">VG</div>
+                      <div className="text-lg font-bold text-[#0CBCE5]">{bottomSheetNode.groupVg}</div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-0">
+                    <InfoRow label="Rango" value={bottomSheetNode.rank} />
+                    <InfoRow label="Nivel" value={`Nivel ${bottomSheetNode.levelDepth}`} />
+                    <InfoRow label="Estado" value={bottomSheetNode.isActive ? 'Activo' : 'Inactivo'} />
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>

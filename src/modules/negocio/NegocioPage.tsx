@@ -4,7 +4,9 @@ import { useNavigate } from '@tanstack/react-router'
 import { useAuth } from '../../hooks/useAuth'
 import { useNetworkStats, useRecentUsers, useCommissionHistory } from '../../hooks/useNegocio'
 import type { CommissionStatus, CommissionRow, RecentUser } from '../../hooks/useNegocio'
+import { useDashboard } from '../../hooks/useDashboard'
 import { cn } from '../../lib/utils'
+import { HoldingTankSection } from './HoldingTankSection'
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -384,6 +386,7 @@ function IngresosDelMesSection({ userId }: { userId: string }) {
 export function NegocioPage() {
   const { user } = useAuth()
   const userId = user?.id ?? ''
+  const { data: dashboard } = useDashboard(userId)
 
   return (
     <main
@@ -400,6 +403,7 @@ export function NegocioPage() {
       <div className="px-5 space-y-3">
         <MiRedSection userId={userId} />
         <IngresosDelMesSection userId={userId} />
+        <HoldingTankSection holdingTankCount={dashboard?.holding_tank_count} />
         <UltimosRegistrosSection />
         <MisComisionesSection userId={userId} />
       </div>

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import type { Product } from '../hooks/useProducts'
 
 export interface CartItem {
@@ -18,7 +19,9 @@ interface CartStore {
   count: () => number
 }
 
-export const useCart = create<CartStore>((set, get) => ({
+export const useCart = create<CartStore>()(
+  persist(
+    (set, get) => ({
   items: [],
 
   add: (product) => {
@@ -63,4 +66,7 @@ export const useCart = create<CartStore>((set, get) => ({
 
   count: () =>
     get().items.reduce((sum, i) => sum + i.quantity, 0),
-}))
+    }),
+    { name: 'helix-cart' }
+  )
+)

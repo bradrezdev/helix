@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { OrgChartTree } from './OrgChartTree'
 import { NetworkStatsBar } from './NetworkStatsBar'
 import { NodeDetailPanel } from './NodeDetailPanel'
@@ -7,6 +7,29 @@ import type { NetworkNode, TreeType } from './NetworkNode'
 import { cn } from '../../lib/utils'
 import { useAuth } from '../../hooks/useAuth'
 
+const RANK_IMAGES: Record<string, string> = {
+  Bronce: '/rangos/bronce.png',
+  Plata: '/rangos/plata.png',
+  Oro: '/rangos/oro.png',
+  Platino: '/rangos/platino.png',
+  Diamante: '/rangos/diamond.png',
+  'Doble Diamante': '/rangos/double-diamond.png',
+  'Triple Diamante': '/rangos/triple-diamond.png',
+}
+
+function getMembershipLabel(node: NetworkNode): string {
+  if (node.kitType === 'cliente_preferente') return 'Cliente Preferente'
+  if (node.rank === 'Socio' || node.personalPv < 100) return 'Socio'
+  return node.rank
+}
+
+const InfoRow = ({ label, value }: { label: string; value: string }) => (
+  <div className="flex justify-between items-center py-2 border-b border-gray-50">
+    <span className="text-sm text-gray-500">{label}</span>
+    <span className="text-sm font-medium text-gray-900">{value}</span>
+  </div>
+)
+
 export default function NetworkPage() {
   const { user, loading: authLoading } = useAuth()
   const userId = user?.id ?? ''
@@ -14,8 +37,15 @@ export default function NetworkPage() {
   const [activeTree, setActiveTree] = useState<TreeType>('unilevel')
   const [selectedNode, setSelectedNode] = useState<NetworkNode | null>(null)
   const [rootUserId, setRootUserId] = useState<string | null>(null)
+  const [bottomSheetNode, setBottomSheetNode] = useState<NetworkNode | null>(null)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
 
-  // Use drilled-down node id or fall back to authenticated user id
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+
   const effectiveUserId = rootUserId ?? userId
 
   const univelQuery = useUnivelTree(effectiveUserId, 3)
@@ -29,14 +59,22 @@ export default function NetworkPage() {
   const isError =
     activeTree === 'unilevel' ? univelQuery.isError : sponsorQuery.isError
 
+  function handleNodeClick(node: NetworkNode) {
+    if (isMobile) {
+      setBottomSheetNode(node)
+    } else {
+      setSelectedNode(node)
+    }
+  }
+
   function handleViewNetwork(node: NetworkNode) {
     setRootUserId(node.id)
     setSelectedNode(null)
+    setBottomSheetNode(null)
   }
 
   const stats = statsQuery.data
 
-  // Guard: show unauthenticated state if auth is resolved and no user
   if (!authLoading && !userId) {
     return (
       <div className="flex flex-col items-center justify-center bg-[#F9FAFB]" style={{ height: '100dvh' }}>
@@ -57,20 +95,6 @@ export default function NetworkPage() {
           <h1 className="text-xl font-semibold text-[#062A63] tracking-tight">Mi Red</h1>
           <p className="text-xs text-gray-400 mt-0.5">Visualización de tu estructura MLM</p>
         </div>
-
-        {/* Tab Switcher */}
-        <div className="flex bg-gray-100 rounded-full p-1 gap-1">
-          <TabButton
-            label="Uninivel"
-            active={activeTree === 'unilevel'}
-            onClick={() => setActiveTree('unilevel')}
-          />
-          <TabButton
-            label="Patrocinio"
-            active={activeTree === 'sponsor'}
-            onClick={() => setActiveTree('sponsor')}
-          />
-        </div>
       </header>
 
       {/* Stats Bar */}
@@ -83,7 +107,23 @@ export default function NetworkPage() {
       />
 
       {/* Chart Area */}
-      <div className="flex-1 relative overflow-hidden mx-4 mb-4 bg-white rounded-[32px] shadow-sm border border-gray-100">
+      <div className="flex-1 relative overflow-hidden mx-4 mb-4 bg-white rounded-[32px] shadow-sm border border-gray-100" style={{ minHeight: '400px' }}>
+        {/* Tab Switcher — inside chart, top-center */}
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
+          <div className="bg-white/90 backdrop-blur-sm rounded-full shadow-md px-1 py-1 flex gap-1">
+            <TabButton
+              label="Uninivel"
+              active={activeTree === 'unilevel'}
+              onClick={() => setActiveTree('unilevel')}
+            />
+            <TabButton
+              label="Patrocinio"
+              active={activeTree === 'sponsor'}
+              onClick={() => setActiveTree('sponsor')}
+            />
+          </div>
+        </div>
+
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center">
             <LoadingSpinner />
@@ -114,17 +154,93 @@ export default function NetworkPage() {
           <OrgChartTree
             nodes={currentNodes}
             treeType={activeTree}
-            onNodeClick={setSelectedNode}
+            onNodeClick={handleNodeClick}
           />
+        )}
+
+        {/* Mobile Bottom Sheet */}
+        {isMobile && (
+          <div
+            style={{ transform: bottomSheetNode ? 'translateY(0)' : 'translateY(100%)' }}
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl z-20 transition-transform duration-300 ease-out"
+          >
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-10 h-1 bg-gray-200 rounded-full" />
+            </div>
+            {/* Close button */}
+            <button
+              onClick={() => setBottomSheetNode(null)}
+              className="absolute top-3 right-4 text-gray-400"
+            >✕</button>
+
+            {bottomSheetNode && (
+              <div className="px-5 pb-6 space-y-3 max-h-[60vh] overflow-y-auto">
+                {/* Avatar + name header */}
+                <div className="flex items-center gap-3 mb-4">
+                  {RANK_IMAGES[bottomSheetNode.rank] ? (
+                    <img
+                      src={RANK_IMAGES[bottomSheetNode.rank]}
+                      className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-[#062A63] flex items-center justify-center flex-shrink-0">
+                      <span className="text-white text-lg font-semibold">
+                        {bottomSheetNode.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    <div className="font-semibold text-gray-900 text-base">{bottomSheetNode.name}</div>
+                    <div className="text-sm text-gray-500">{getMembershipLabel(bottomSheetNode)}</div>
+                  </div>
+                </div>
+
+                {/* Stats grid */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-gray-50 rounded-xl p-3 text-center">
+                    <div className="text-xs text-gray-400">PV</div>
+                    <div className="text-lg font-bold text-[#062A63]">{bottomSheetNode.personalPv}</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-3 text-center">
+                    <div className="text-xs text-gray-400">CV</div>
+                    <div className="text-lg font-bold text-[#062A63]">{bottomSheetNode.personalCv}</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-3 text-center">
+                    <div className="text-xs text-gray-400">VG</div>
+                    <div className="text-lg font-bold text-[#0CBCE5]">{bottomSheetNode.groupVg}</div>
+                  </div>
+                </div>
+
+                {/* Info list */}
+                <div className="space-y-0">
+                  <InfoRow label="Rango" value={bottomSheetNode.rank} />
+                  <InfoRow label="Nivel" value={`Nivel ${bottomSheetNode.levelDepth}`} />
+                  <InfoRow label="Estado" value={bottomSheetNode.isActive ? 'Activo' : 'Inactivo'} />
+                </div>
+
+                {/* View network button */}
+                <button
+                  onClick={() => handleViewNetwork(bottomSheetNode)}
+                  className="w-full py-3 rounded-full text-sm font-semibold text-white mt-2"
+                  style={{ background: '#062A63' }}
+                >
+                  Ver su red
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
-      {/* Node Detail Panel */}
-      <NodeDetailPanel
-        node={selectedNode}
-        onClose={() => setSelectedNode(null)}
-        onViewNetwork={handleViewNetwork}
-      />
+      {/* Node Detail Panel (desktop only) */}
+      {!isMobile && (
+        <NodeDetailPanel
+          node={selectedNode}
+          onClose={() => setSelectedNode(null)}
+          onViewNetwork={handleViewNetwork}
+        />
+      )}
     </div>
   )
 }
@@ -144,8 +260,8 @@ function TabButton({
       className={cn(
         'px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200',
         active
-          ? 'bg-white text-[#062A63] shadow-sm'
-          : 'text-gray-400 hover:text-gray-600'
+          ? 'bg-[#062A63] text-white shadow-sm'
+          : 'text-gray-500 hover:text-gray-700'
       )}
     >
       {label}

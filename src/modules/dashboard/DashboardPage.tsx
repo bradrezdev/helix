@@ -259,15 +259,13 @@ export function DashboardPage() {
               <GlanceCard
                 title="PV Personal"
                 value={formatNumber(data.personal_pv)}
-                subtitle="Puntos de volumen personal"
                 variant="filled"
-                accentColor="success"
+                accentColor="secondary"
               />
               {/* Rank — filled blue */}
               <GlanceCard
                 title="Rango actual"
                 value={data.rank}
-                subtitle="Nivel de calificación"
                 variant="filled"
                 accentColor="primary"
               />
@@ -287,14 +285,12 @@ export function DashboardPage() {
               <GlanceCard
                 title="VG Grupal"
                 value={formatNumber(data.group_vg)}
-                subtitle="Volumen grupal del mes"
                 variant="filled"
                 accentColor="primary"
               />
               <GlanceCard
                 title="CV Personal"
                 value={formatNumber(data.personal_cv)}
-                subtitle="Volumen personal del mes"
                 accent="secondary"
               />
             </>
@@ -317,15 +313,13 @@ export function DashboardPage() {
         {!isDataLoading && data && (
           <div className="grid grid-cols-2 gap-3">
             <GlanceCard
-              title="Directs activos"
+              title="Directos activos"
               value={data.active_directs}
-              subtitle="Distribuidores activos directos"
               accent="neutral"
             />
             <GlanceCard
               title="Puntos fidelidad"
               value={formatNumber(data.fidelity_points)}
-              subtitle="Puntos acumulados"
               accent="neutral"
             />
           </div>
@@ -340,7 +334,7 @@ export function DashboardPage() {
               currentVg={data.group_vg}
               targetVg={rankInfo.vgTarget}
               nextRank={rankInfo.nextRank}
-              daysLeft={13}
+              daysLeft={data.days_left_in_month ?? 0}
             />
           ) : null}
         </div>

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { OrgChart } from 'd3-org-chart'
 import type { NetworkNode } from './NetworkNode'
-import { getRankColor, getInitial } from './NetworkNode'
+import { getInitial } from './NetworkNode'
 
 interface OrgChartNode {
   id: string
@@ -11,53 +11,88 @@ interface OrgChartNode {
   rank: string
   isActive: boolean
   personalCv: number
+  personalPv: number
+  groupVg: number
+  kitType: string | null
+}
+
+const RANK_IMAGES: Record<string, string> = {
+  Bronce: '/rangos/bronce.png',
+  Plata: '/rangos/plata.png',
+  Oro: '/rangos/oro.png',
+  Platino: '/rangos/platino.png',
+  Diamante: '/rangos/diamond.png',
+  'Doble Diamante': '/rangos/double-diamond.png',
+  'Triple Diamante': '/rangos/triple-diamond.png',
+}
+
+function getMembershipLabel(node: OrgChartNode): string {
+  if (node.kitType === 'cliente_preferente') return 'Cliente Preferente'
+  if (node.rank === 'Socio' || node.personalPv < 100) return 'Socio'
+  return node.rank
+}
+
+function buildNodeTemplate(node: OrgChartNode): string {
+  const initial = getInitial(node.name)
+  const rankImage = RANK_IMAGES[node.rank] ?? null
+  const membershipLabel = getMembershipLabel(node)
+  const opacity = node.isActive ? '1' : '0.5'
+  const borderColor = node.isActive ? '#e5e7eb' : '#f3f4f6'
+
+  const avatarHtml = rankImage
+    ? `<img src="${rankImage}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;" />`
+    : `<div style="width:36px;height:36px;border-radius:50%;background:#062A63;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <span style="color:white;font-size:14px;font-weight:600;">${initial}</span>
+      </div>`
+
+  const activeBadge = node.isActive
+    ? `<div style="background:#d1fae5;color:#065f46;font-size:9px;font-weight:600;padding:2px 6px;border-radius:9999px;flex-shrink:0;">Activo</div>`
+    : ''
+
+  return `
+    <div style="
+      width: 220px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+      padding: 10px 12px;
+      font-family: Poppins, sans-serif;
+      opacity: ${opacity};
+      border: 1.5px solid ${borderColor};
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    ">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+        ${avatarHtml}
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${node.name}</div>
+          <div style="font-size:10px;color:#6b7280;">${membershipLabel}</div>
+        </div>
+        ${activeBadge}
+      </div>
+      <div style="display:flex;gap:4px;">
+        <div style="flex:1;background:#f9fafb;border-radius:10px;padding:4px 6px;text-align:center;">
+          <div style="font-size:9px;color:#9ca3af;">PV</div>
+          <div style="font-size:11px;font-weight:700;color:#062A63;">${node.personalPv}</div>
+        </div>
+        <div style="flex:1;background:#f9fafb;border-radius:10px;padding:4px 6px;text-align:center;">
+          <div style="font-size:9px;color:#9ca3af;">CV</div>
+          <div style="font-size:11px;font-weight:700;color:#062A63;">${node.personalCv}</div>
+        </div>
+        <div style="flex:1;background:#f9fafb;border-radius:10px;padding:4px 6px;text-align:center;">
+          <div style="font-size:9px;color:#9ca3af;">VG</div>
+          <div style="font-size:11px;font-weight:700;color:#0CBCE5;">${node.groupVg}</div>
+        </div>
+      </div>
+    </div>
+  `
 }
 
 interface OrgChartTreeProps {
   nodes: NetworkNode[]
   treeType: 'unilevel' | 'sponsor'
   onNodeClick?: (node: NetworkNode) => void
-}
-
-function buildNodeTemplate(node: OrgChartNode): string {
-  const initial = getInitial(node.name)
-  const rankColor = getRankColor(node.rank)
-  const activeColor = node.isActive ? '#10B981' : '#9CA3AF'
-  const activeText = node.isActive ? 'Activo' : 'Inactivo'
-  const opacity = node.isActive ? '1' : '0.55'
-  const cv = node.personalCv.toLocaleString('es-MX')
-
-  return `
-    <div style="
-      background: white;
-      border-radius: 16px;
-      padding: 12px 16px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-      border: 1.5px solid #EAECF0;
-      font-family: Poppins, sans-serif;
-      width: 180px;
-      opacity: ${opacity};
-      transition: box-shadow 0.15s ease;
-      cursor: pointer;
-    ">
-      <div style="display:flex; align-items:center; gap:10px;">
-        <div style="
-          width:36px; height:36px; border-radius:50%;
-          background: #062A63; color:white;
-          display:flex; align-items:center; justify-content:center;
-          font-weight:600; font-size:14px; flex-shrink:0;
-        ">${initial}</div>
-        <div style="overflow:hidden;">
-          <div style="font-weight:600; font-size:13px; color:#383A3F; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${node.name}</div>
-          <div style="font-size:11px; color:${rankColor}; font-weight:500">${node.rank}</div>
-        </div>
-      </div>
-      <div style="margin-top:8px; display:flex; justify-content:space-between; font-size:11px; color:#6B7280;">
-        <span>CV: ${cv}</span>
-        <span style="color:${activeColor};">● ${activeText}</span>
-      </div>
-    </div>
-  `
 }
 
 export function OrgChartTree({ nodes, treeType, onNodeClick }: OrgChartTreeProps) {
@@ -75,6 +110,9 @@ export function OrgChartTree({ nodes, treeType, onNodeClick }: OrgChartTreeProps
       rank: n.rank,
       isActive: n.isActive,
       personalCv: n.personalCv,
+      personalPv: n.personalPv,
+      groupVg: n.groupVg,
+      kitType: n.kitType,
     }))
 
     if (!chartRef.current) {
@@ -86,8 +124,8 @@ export function OrgChartTree({ nodes, treeType, onNodeClick }: OrgChartTreeProps
     chart
       .container(containerRef.current)
       .data(chartData)
-      .nodeWidth(() => 196)
-      .nodeHeight(() => 86)
+      .nodeWidth(() => 220)
+      .nodeHeight(() => 136)
       .childrenMargin(() => 40)
       .compactMarginBetween(() => 15)
       .compactMarginPair(() => 80)
@@ -128,12 +166,14 @@ export function OrgChartTree({ nodes, treeType, onNodeClick }: OrgChartTreeProps
   const expandAll = () => chartRef.current?.expandAll()
 
   return (
-    <div className={isFullscreen
-      ? 'fixed inset-0 z-[9999] w-screen h-[100dvh] bg-white flex flex-col overflow-hidden'
-      : 'relative flex-1 flex flex-col overflow-hidden'
-    }>
-      {/* Controls */}
-      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+    <div
+      style={isFullscreen
+        ? { position: 'fixed', inset: 0, zIndex: 9999, width: '100vw', height: '100dvh', background: 'white', overflow: 'hidden' }
+        : { position: 'relative', width: '100%', height: '100%' }
+      }
+    >
+      {/* Controls — bottom-right */}
+      <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
         <button
           onClick={zoomIn}
           className="w-9 h-9 bg-white rounded-2xl shadow-md border border-gray-100 flex items-center justify-center text-[#062A63] text-lg font-light hover:shadow-lg transition-shadow"
@@ -161,11 +201,9 @@ export function OrgChartTree({ nodes, treeType, onNodeClick }: OrgChartTreeProps
           className="w-9 h-9 bg-white rounded-2xl shadow-md border border-gray-100 flex items-center justify-center text-[#062A63] hover:shadow-lg transition-shadow"
           title="Expandir todo"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="15 3 21 3 21 9"/>
-            <polyline points="9 21 3 21 3 15"/>
-            <line x1="21" y1="3" x2="14" y2="10"/>
-            <line x1="3" y1="21" x2="10" y2="14"/>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="13 17 18 12 13 7"/>
+            <polyline points="11 17 6 12 11 7"/>
           </svg>
         </button>
         <button
@@ -187,7 +225,7 @@ export function OrgChartTree({ nodes, treeType, onNodeClick }: OrgChartTreeProps
       </div>
 
       {/* Chart container */}
-      <div ref={containerRef} className="flex-1 w-full overflow-hidden" style={{ minHeight: 0 }} />
+      <div ref={containerRef} style={{ width: '100%', height: '100%', paddingTop: '52px', boxSizing: 'border-box' }} />
     </div>
   )
 }

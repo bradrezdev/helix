@@ -10,6 +10,8 @@ interface RawNetworkNode {
   level_depth: number
   is_active: boolean
   personal_cv: number
+  personal_pv?: number
+  group_vg?: number
   kit_type: string | null
 }
 
@@ -30,6 +32,8 @@ function transformNode(raw: RawNetworkNode): NetworkNode {
     rank: raw.rank,
     isActive: raw.is_active,
     personalCv: raw.personal_cv,
+    personalPv: raw.personal_pv ?? 0,
+    groupVg: raw.group_vg ?? 0,
     kitType: raw.kit_type,
     levelDepth: raw.level_depth,
   }

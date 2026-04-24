@@ -303,7 +303,7 @@ export type Database = {
           country: Database["public"]["Enums"]["country_type"] | null
           created_at: string | null
           cv: number
-          external_id: string | null
+          order_id: string | null
           id: string
           is_from_preferred_client: boolean | null
           is_kit: boolean | null
@@ -324,7 +324,7 @@ export type Database = {
           country?: Database["public"]["Enums"]["country_type"] | null
           created_at?: string | null
           cv: number
-          external_id?: string | null
+          order_id?: string | null
           id?: string
           is_from_preferred_client?: boolean | null
           is_kit?: boolean | null
@@ -345,7 +345,7 @@ export type Database = {
           country?: Database["public"]["Enums"]["country_type"] | null
           created_at?: string | null
           cv?: number
-          external_id?: string | null
+          order_id?: string | null
           id?: string
           is_from_preferred_client?: boolean | null
           is_kit?: boolean | null
@@ -533,11 +533,11 @@ export type Database = {
           created_at: string | null
           email: string | null
           enrollment_date: string | null
-          external_id: string | null
           fidelity_points: number | null
           group_vg: number | null
           id: string
           is_active: boolean | null
+          is_admin: boolean | null
           kit_type: Database["public"]["Enums"]["kit_type"] | null
           link_referido: string | null
           ltp_points: number | null
@@ -549,7 +549,6 @@ export type Database = {
           promotor_bonos: number | null
           rank: Database["public"]["Enums"]["rank_type"] | null
           sponsor_id: string | null
-          sponsor_user_id: number | null
           unilevel_parent_id: string | null
           updated_at: string | null
           user_id: number
@@ -560,11 +559,11 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           enrollment_date?: string | null
-          external_id?: string | null
           fidelity_points?: number | null
           group_vg?: number | null
           id?: string
           is_active?: boolean | null
+          is_admin?: boolean | null
           kit_type?: Database["public"]["Enums"]["kit_type"] | null
           link_referido?: string | null
           ltp_points?: number | null
@@ -576,7 +575,6 @@ export type Database = {
           promotor_bonos?: number | null
           rank?: Database["public"]["Enums"]["rank_type"] | null
           sponsor_id?: string | null
-          sponsor_user_id?: number | null
           unilevel_parent_id?: string | null
           updated_at?: string | null
           user_id?: number
@@ -587,11 +585,11 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           enrollment_date?: string | null
-          external_id?: string | null
           fidelity_points?: number | null
           group_vg?: number | null
           id?: string
           is_active?: boolean | null
+          is_admin?: boolean | null
           kit_type?: Database["public"]["Enums"]["kit_type"] | null
           link_referido?: string | null
           ltp_points?: number | null
@@ -603,7 +601,6 @@ export type Database = {
           promotor_bonos?: number | null
           rank?: Database["public"]["Enums"]["rank_type"] | null
           sponsor_id?: string | null
-          sponsor_user_id?: number | null
           unilevel_parent_id?: string | null
           updated_at?: string | null
           user_id?: number
@@ -665,7 +662,7 @@ export type Database = {
           country: Database["public"]["Enums"]["country_type"] | null
           created_at: string | null
           cv: number | null
-          external_id: string | null
+          order_id: string | null
           id: string | null
           is_from_preferred_client: boolean | null
           is_kit: boolean | null

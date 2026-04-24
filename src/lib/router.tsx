@@ -12,6 +12,7 @@ import { TiendaPage } from '../modules/tienda/TiendaPage'
 import { CheckoutPage } from '../modules/tienda/CheckoutPage'
 import { AdminPage } from '../modules/admin/AdminPage'
 import { AdminGuard } from '../components/AdminGuard'
+import { OrdenDetailPage } from '../modules/pedidos/OrdenDetailPage'
 
 // Helper: check auth
 async function requireAuth() {
@@ -100,6 +101,12 @@ const ordenesRoute = createRoute({
   component: PedidosPage,
 })
 
+const ordenDetailRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/ordenes/$orderId',
+  component: OrdenDetailPage,
+})
+
 const tiendaRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/tienda',
@@ -122,6 +129,12 @@ const adminRoute = createRoute({
   ),
 })
 
+const pedidosRedirectRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/pedidos',
+  beforeLoad: () => { throw redirect({ to: '/ordenes' }) },
+})
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
   registerByLinkRoute,
@@ -130,10 +143,12 @@ const routeTree = rootRoute.addChildren([
     networkRoute,
     networkTreeRoute,
     ordenesRoute,
+    ordenDetailRoute,
     tiendaRoute,
     checkoutRoute,
     registerRoute,
     adminRoute,
+    pedidosRedirectRoute,
   ]),
 ])
 

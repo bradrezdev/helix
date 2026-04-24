@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ChevronRight, ChevronDown, PackageOpen, Search } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
 import { useAuth } from '../../hooks/useAuth'
 import { usePedidos } from '../../hooks/usePedidos'
 import type { OrderWithItems } from '../../hooks/usePedidos'
@@ -71,6 +72,7 @@ function StatusBadge({ status }: { status: OrderStatus | null }) {
 
 function OrderCard({ order }: { order: OrderWithItems }) {
   const [expanded, setExpanded] = useState(false)
+  const navigate = useNavigate()
   const items = order.order_items ?? []
 
   return (
@@ -129,7 +131,7 @@ function OrderCard({ order }: { order: OrderWithItems }) {
       {/* Ver detalles button */}
       <div className="px-5 pb-3 flex justify-end" style={{ borderTop: '1px solid #EAECF0' }}>
         <button
-          onClick={() => setExpanded((v) => !v)}
+          onClick={() => navigate({ to: '/ordenes/$orderId', params: { orderId: order.id } })}
           className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
           style={{
             color: '#0CBCE5',
