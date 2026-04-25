@@ -34,7 +34,7 @@ const NAV_ITEMS: NavItem[] = [
 
 const DROPDOWN_ITEMS = [
   { icon: Library, label: 'Herramientas de negocio', route: null },
-  { icon: Calculator, label: 'Simulador de Ganancias', route: '/simulador' },
+  
   { icon: ArrowDownToLine, label: 'Retiro a cuenta bancaria', route: '/retiros' },
   { icon: Wallet, label: 'Transferencia interna', route: null },
   { icon: Plus, label: 'Nuevo registro', route: null },

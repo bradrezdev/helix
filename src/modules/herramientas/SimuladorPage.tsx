@@ -1,189 +1,73 @@
 import { useState, useMemo } from 'react'
-import { Calculator, TrendingUp, Users, Award, Infinity, Star, AlertCircle } from 'lucide-react'
+import { Calculator, TrendingUp, Users, Award, Infinity, Star, AlertCircle, Lock } from 'lucide-react'
+import { useIsAdmin } from '../../hooks/useAdmin'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Rank =
-  | 'Socio'
-  | 'Bronce'
-  | 'Plata'
-  | 'Oro'
-  | 'Platino'
-  | 'Diamante'
-  | 'Doble Diamante'
-  | 'Triple Diamante'
-  | 'Diamante Embajador'
-  | 'Doble Diamante Embajador'
-  | 'Triple Diamante Embajador'
-
 interface SimConfig {
-  rank: Rank
-  pvPersonal: number
-  directCount: number
-  pvPerDirect: number
-  networkDepth: number
-  perLevel: number
+  directosPorPersona: number   // direct sponsors per person
+  nivelesProfundidad: number   // network depth 1-9
+  pvPorPersona: number         // avg PV per person
+  cvPorPersona: number         // avg CV per person
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const RANKS: Rank[] = [
-  'Socio',
-  'Bronce',
-  'Plata',
-  'Oro',
-  'Platino',
-  'Diamante',
-  'Doble Diamante',
-  'Triple Diamante',
-  'Diamante Embajador',
-  'Doble Diamante Embajador',
-  'Triple Diamante Embajador',
-]
-
-const DIFERENCIAL_PCT: Partial<Record<Rank, number>> = {
-  Bronce: 0.06,
-  Plata: 0.07,
-  Oro: 0.08,
-  Platino: 0.09,
-  Diamante: 0.10,
-  'Doble Diamante': 0.11,
-  'Triple Diamante': 0.12,
-  'Diamante Embajador': 0.13,
-  'Doble Diamante Embajador': 0.14,
-  'Triple Diamante Embajador': 0.15,
-}
-
+// Unilevel percentages by level index (0=level 1 through 8=level 9)
 const UNILEVEL_PCT = [0.06, 0.08, 0.10, 0.12, 0.05, 0.04, 0.03, 0.02, 0.02]
 
-const INFINITO_UNILEVEL_PCT: Partial<Record<Rank, number>> = {
-  Platino: 0.005,
-  Diamante: 0.0075,
-  'Doble Diamante': 0.01,
-  'Triple Diamante': 0.0125,
-  'Diamante Embajador': 0.015,
-  'Doble Diamante Embajador': 0.0175,
-  'Triple Diamante Embajador': 0.02,
-}
-
-const MATCH_PCTS: Partial<Record<Rank, number[]>> = {
-  Plata: [0.05],
-  Oro: [0.10],
-  Platino: [0.15],
-  Diamante: [0.25, 0.05],
-  'Doble Diamante': [0.25, 0.10, 0.10],
-  'Triple Diamante': [0.25, 0.15, 0.10, 0.05],
-  'Diamante Embajador': [0.25, 0.15, 0.10, 0.05, 0.01],
-  'Doble Diamante Embajador': [0.25, 0.15, 0.10, 0.05, 0.03],
-  'Triple Diamante Embajador': [0.25, 0.15, 0.10, 0.05, 0.05],
-}
-
-const AVANCE_RANGO: Partial<Record<Rank, number>> = {
-  Bronce: 100,
-  Plata: 150,
-  Oro: 200,
-  Platino: 250,
-  Diamante: 500,
-  'Doble Diamante': 1000,
-  'Triple Diamante': 2500,
-  'Diamante Embajador': 5000,
-  'Doble Diamante Embajador': 10000,
-  'Triple Diamante Embajador': 25000,
-}
+// Match bonus: simplified percentage based on network depth
+// Each entry is [depth, pct] - for depth 1: 25%, depth 2+: based on depth tiers
+const MATCH_TABLE: [number, number][] = [
+  [1, 0.25],   // direct level: 25%
+  [2, 0.10],   // depth 2: 10%
+  [3, 0.05],   // depth 3: 5%
+]
 
 // ─── Calculation logic ────────────────────────────────────────────────────────
 
 interface BonusBreakdown {
-  patrocinio: number       // direct sponsor 20%+10%+5%
-  diferencial: number      // differential on depth 4+
-  unilevel: number         // 9 levels
-  match: number            // match on unilevel earnings
-  infinitoPatrocinio: number  // sponsor tree depth 4+ (same as diferencial, separate label)
-  infinitoUnilevel: number // depth 10+
-  avanceRango: number      // one-time
-  total: number            // recurring sum (excl. avance)
+  patrocinio: number    // direct sponsor bonuses
+  unilevel: number      // unilevel 9 levels
+  match: number         // match bonus
+  total: number         // recurring sum
 }
 
 function calcBonuses(cfg: SimConfig): BonusBreakdown {
-  const { rank, pvPersonal: _pvPersonal, directCount, pvPerDirect, networkDepth, perLevel } = cfg
+  const { directosPorPersona, nivelesProfundidad, pvPorPersona, cvPorPersona } = cfg
 
-  // Helpers
-  const countAtDepth = (d: number) => Math.pow(perLevel, d) // sponsor tree same as unilevel tree in simulation
-
-  // ── Bono Patrocinio (sponsor levels 1–3) ──
+  // ── Patrocinio (sponsor levels 1–3) ──
   // Level 1 = direct sponsors
-  const l1cv = directCount * pvPerDirect
-  const l2cv = countAtDepth(2) * pvPerDirect
-  const l3cv = countAtDepth(3) * pvPerDirect
+  const l1cv = directosPorPersona * cvPorPersona
+  const l2cv = directosPorPersona * directosPorPersona * cvPorPersona
+  const l3cv = directosPorPersona * directosPorPersona * directosPorPersona * cvPorPersona
 
-  const directSponsor = l1cv * 0.20 + l2cv * 0.10 + l3cv * 0.05
+  const patrocinio = l1cv * 0.20 + l2cv * 0.10 + l3cv * 0.05
 
-  // ── Diferencial Patrocinio (ranks Bronce+, depth 4+) ──
-  // Since downline assumed Socio (0%), we collect full rank%
-  const diferPct = DIFERENCIAL_PCT[rank] ?? 0
-  let diferencial = 0
-  if (diferPct > 0) {
-    for (let d = 4; d <= Math.max(networkDepth, 4); d++) {
-      diferencial += countAtDepth(d) * pvPerDirect * diferPct
-    }
-    // If networkDepth < 4, no diferencial
-    if (networkDepth < 4) diferencial = 0
-  }
-
-  // ── Unilevel (9 levels) ──
+  // ── Unilevel (9 levels, capped by network depth) ──
   let unilevel = 0
-  const uniPerPerson: number[] = []
   for (let d = 1; d <= 9; d++) {
-    const count = d <= networkDepth ? countAtDepth(d) : 0
-    const earning = count * pvPerDirect * UNILEVEL_PCT[d - 1]
-    uniPerPerson.push(count > 0 ? pvPerDirect * UNILEVEL_PCT[d - 1] : 0)
-    unilevel += earning
+    const count = d <= nivelesProfundidad
+      ? Math.pow(directosPorPersona, d)
+      : 0
+    unilevel += count * pvPorPersona * UNILEVEL_PCT[d - 1]
   }
 
-  // ── Match Bonus ──
-  // On unilevel earnings of sponsor-tree downline (levels 1–5 of sponsor tree)
-  const matchPcts = MATCH_PCTS[rank] ?? []
+  // ── Match Bonus (simplified: % of unilevel earnings by depth) ──
   let match = 0
-  const avgUniPerPerson = uniPerPerson.length > 0
-    ? uniPerPerson.reduce((a, b) => a + b, 0) / 9
-    : 0
-
-  for (let lvl = 1; lvl <= matchPcts.length; lvl++) {
-    const count = lvl <= networkDepth ? countAtDepth(lvl) : (lvl === 1 ? directCount : 0)
-    // estimated unilevel per person at this sponsor level
-    const estUnilevel = avgUniPerPerson * 9 // rough: each person earns ~same avg
-    match += count * estUnilevel * matchPcts[lvl - 1]
-  }
-
-  // ── Infinito Patrocinio ──
-  // Same as diferencial in this simulation (sponsor tree depth 4+)
-  const infinitoPatrocinio = diferencial
-
-  // ── Infinito Unilevel (depth 10+, Platino+) ──
-  const infUniPct = INFINITO_UNILEVEL_PCT[rank] ?? 0
-  let infinitoUnilevel = 0
-  if (infUniPct > 0 && networkDepth >= 10) {
-    // Cap at depth 15 to avoid astronomical numbers
-    const maxDepth = Math.min(networkDepth, 15)
-    for (let d = 10; d <= maxDepth; d++) {
-      infinitoUnilevel += countAtDepth(d) * pvPerDirect * infUniPct
+  for (const [depth, pct] of MATCH_TABLE) {
+    if (depth <= nivelesProfundidad) {
+      const count = Math.pow(directosPorPersona, depth)
+      match += count * pvPorPersona * pct * UNILEVEL_PCT[0] // rough est based on level 1 earnings
     }
   }
 
-  // ── Avance de Rango ──
-  const avanceRango = AVANCE_RANGO[rank] ?? 0
-
-  // ── Total (recurring only) ──
-  const total = directSponsor + diferencial + unilevel + match + infinitoUnilevel
+  const total = patrocinio + unilevel + match
 
   return {
-    patrocinio: directSponsor,
-    diferencial,
+    patrocinio,
     unilevel,
     match,
-    infinitoPatrocinio,
-    infinitoUnilevel,
-    avanceRango,
     total,
   }
 }
@@ -301,18 +185,51 @@ function BonusCard({
   )
 }
 
+// ─── Access Denied ─────────────────────────────────────────────────────────────
+
+function AccessDenied() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#F2F4F9] p-6">
+      <div
+        className="rounded-[32px] bg-white shadow-[0_2px_12px_rgba(6,42,99,0.07)] p-8 max-w-sm w-full text-center"
+        style={{ border: '1px solid #EAECF0' }}
+      >
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ background: 'rgba(6,42,99,0.08)' }}>
+          <Lock size={28} color="#062A63" />
+        </div>
+        <h2
+          className="text-lg font-semibold mb-2"
+          style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}
+        >
+          Acceso denegado
+        </h2>
+        <p
+          className="text-sm"
+          style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}
+        >
+          Solo los administradores pueden acceder al Simulador de Ganancias.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const DEFAULT_CONFIG: SimConfig = {
-  rank: 'Socio',
-  pvPersonal: 100,
-  directCount: 3,
-  pvPerDirect: 100,
-  networkDepth: 4,
-  perLevel: 3,
+  directosPorPersona: 3,
+  nivelesProfundidad: 4,
+  pvPorPersona: 100,
+  cvPorPersona: 50,
 }
 
 export function SimuladorPage() {
+  const isAdmin = useIsAdmin()
+
+  if (!isAdmin) {
+    return <AccessDenied />
+  }
+
   const [cfg, setCfg] = useState<SimConfig>(DEFAULT_CONFIG)
 
   const bonuses = useMemo(() => calcBonuses(cfg), [cfg])
@@ -364,40 +281,10 @@ export function SimuladorPage() {
         >
           <SectionTitle>Tu Configuración</SectionTitle>
 
-          {/* Rank */}
-          <div>
-            <InputLabel>Tu Rango</InputLabel>
-            <select
-              className={inputCls}
-              style={{ fontFamily: 'Poppins, sans-serif', color: '#062A63' }}
-              value={cfg.rank}
-              onChange={(e) => update('rank', e.target.value as Rank)}
-            >
-              {RANKS.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* PV Personal */}
-          <div>
-            <InputLabel>PV Personal</InputLabel>
-            <input
-              type="number"
-              className={inputCls}
-              style={{ fontFamily: 'Poppins, sans-serif', color: '#062A63' }}
-              min={0}
-              value={cfg.pvPersonal}
-              onChange={(e) => update('pvPersonal', Math.max(0, Number(e.target.value)))}
-            />
-          </div>
-
-          {/* Direct count */}
+          {/* Directos por persona */}
           <div>
             <InputLabel>
-              Número de patrocinados directos
+              Directos por persona
               <span className="ml-1 font-normal text-[#9CA3AF]">(1–10)</span>
             </InputLabel>
             <input
@@ -406,31 +293,18 @@ export function SimuladorPage() {
               style={{ fontFamily: 'Poppins, sans-serif', color: '#062A63' }}
               min={1}
               max={10}
-              value={cfg.directCount}
+              value={cfg.directosPorPersona}
               onChange={(e) =>
-                update('directCount', Math.min(10, Math.max(1, Number(e.target.value))))
+                update('directosPorPersona', Math.min(10, Math.max(1, Number(e.target.value))))
               }
             />
           </div>
 
-          {/* PV per direct */}
-          <div>
-            <InputLabel>PV promedio por patrocinado directo</InputLabel>
-            <input
-              type="number"
-              className={inputCls}
-              style={{ fontFamily: 'Poppins, sans-serif', color: '#062A63' }}
-              min={0}
-              value={cfg.pvPerDirect}
-              onChange={(e) => update('pvPerDirect', Math.max(0, Number(e.target.value)))}
-            />
-          </div>
-
-          {/* Network depth */}
+          {/* Niveles de profundidad */}
           <div>
             <InputLabel>
-              Profundidad de red unilevel
-              <span className="ml-1 font-normal text-[#9CA3AF]">(niveles 1–9)</span>
+              Niveles de profundidad
+              <span className="ml-1 font-normal text-[#9CA3AF]">(1–9)</span>
             </InputLabel>
             <input
               type="number"
@@ -438,27 +312,37 @@ export function SimuladorPage() {
               style={{ fontFamily: 'Poppins, sans-serif', color: '#062A63' }}
               min={1}
               max={9}
-              value={cfg.networkDepth}
+              value={cfg.nivelesProfundidad}
               onChange={(e) =>
-                update('networkDepth', Math.min(9, Math.max(1, Number(e.target.value))))
+                update('nivelesProfundidad', Math.min(9, Math.max(1, Number(e.target.value))))
               }
             />
           </div>
 
-          {/* Per level */}
+          {/* PV por persona */}
           <div>
-            <InputLabel>Personas por nivel</InputLabel>
+            <InputLabel>PV por persona</InputLabel>
             <input
               type="number"
               className={inputCls}
               style={{ fontFamily: 'Poppins, sans-serif', color: '#062A63' }}
-              min={1}
-              value={cfg.perLevel}
-              onChange={(e) => update('perLevel', Math.max(1, Number(e.target.value)))}
+              min={0}
+              value={cfg.pvPorPersona}
+              onChange={(e) => update('pvPorPersona', Math.max(0, Number(e.target.value)))}
             />
-            <p className="text-[11px] mt-1" style={{ color: '#9CA3AF' }}>
-              Mismo número en cada nivel de profundidad
-            </p>
+          </div>
+
+          {/* CV por persona */}
+          <div>
+            <InputLabel>CV por persona</InputLabel>
+            <input
+              type="number"
+              className={inputCls}
+              style={{ fontFamily: 'Poppins, sans-serif', color: '#062A63' }}
+              min={0}
+              value={cfg.cvPorPersona}
+              onChange={(e) => update('cvPorPersona', Math.max(0, Number(e.target.value)))}
+            />
           </div>
         </div>
 
@@ -474,13 +358,6 @@ export function SimuladorPage() {
             />
 
             <BonusCard
-              icon={<TrendingUp size={18} color={bonuses.diferencial > 0 ? '#0CBCE5' : '#9CA3AF'} />}
-              label="Diferencial Patrocinio"
-              subtitle="Nivel 4+ · Bronce o superior"
-              amount={bonuses.diferencial}
-            />
-
-            <BonusCard
               icon={<Star size={18} color={bonuses.unilevel > 0 ? '#0CBCE5' : '#9CA3AF'} />}
               label="Bono Unilevel"
               subtitle="9 niveles de red unilevel"
@@ -490,80 +367,19 @@ export function SimuladorPage() {
             <BonusCard
               icon={<Award size={18} color={bonuses.match > 0 ? '#0CBCE5' : '#9CA3AF'} />}
               label="Bono Match"
-              subtitle="Sobre ganancias unilevel de tu red patrocinio"
+              subtitle="Sobre ganancias de red patrocinio"
               amount={bonuses.match}
-            />
-
-            <BonusCard
-              icon={
-                <Infinity size={18} color={bonuses.infinitoUnilevel > 0 ? '#0CBCE5' : '#9CA3AF'} />
-              }
-              label="Bono Infinito Unilevel"
-              subtitle="Profundidad 10+ · Platino o superior"
-              amount={bonuses.infinitoUnilevel}
             />
 
             {/* Total */}
             <BonusCard
               icon={<Calculator size={18} color="white" />}
-              label="TOTAL RECURRENTE"
+              label="TOTAL ESTIMADO"
               subtitle="Suma de bonos mensuales"
               amount={bonuses.total}
               highlight
             />
           </div>
-        </div>
-
-        {/* ── One-time bonus ── */}
-        <div>
-          <SectionTitle>Bono de Avance de Rango</SectionTitle>
-          <div
-            className="rounded-[16px] p-4 flex items-center gap-3"
-            style={{
-              background: 'white',
-              boxShadow: '0 1px 8px rgba(6,42,99,0.07)',
-              border: '1px solid rgba(234,236,240,0.8)',
-            }}
-          >
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{
-                background:
-                  bonuses.avanceRango > 0 ? 'rgba(245,158,11,0.1)' : 'rgba(156,163,175,0.1)',
-              }}
-            >
-              <Award size={18} color={bonuses.avanceRango > 0 ? '#D97706' : '#9CA3AF'} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div
-                className="text-[12px] font-medium"
-                style={{ color: '#6B7280', fontFamily: 'Poppins, sans-serif' }}
-              >
-                Bono Avance de Rango
-              </div>
-              <div
-                className="text-[10px] mt-0.5"
-                style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}
-              >
-                Pago único al calificar al rango actual
-              </div>
-            </div>
-            <div
-              className="text-[16px] font-bold flex-shrink-0"
-              style={{
-                color: bonuses.avanceRango > 0 ? '#D97706' : '#9CA3AF',
-                fontFamily: 'Poppins, sans-serif',
-              }}
-            >
-              {fmt(bonuses.avanceRango)}
-            </div>
-          </div>
-          <p
-            className="text-[11px] mt-2 px-1"
-            style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}
-          >
-            * Este bono se paga una sola vez al calificar al rango. No es recurrente.
-          </p>
         </div>
 
         {/* ── Disclaimer ── */}
