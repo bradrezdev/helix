@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Calculator, TrendingUp, Users, Award, Infinity, Star, AlertCircle, Lock } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
-import { useProfile } from '../../hooks/useProfile'
+import { supabase } from '../../lib/supabase'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -226,10 +227,24 @@ const DEFAULT_CONFIG: SimConfig = {
 
 export function SimuladorPage() {
   const { user, loading: authLoading } = useAuth()
-  const { data: profile } = useProfile(user?.id ?? '')
   
-  // Wait for auth and profile to load
-  if (authLoading || !profile) {
+  // Direct query to avoid cache issues
+  const { data: profile, isLoading: profileLoading } = useQuery({
+    queryKey: ['admin-check', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null
+      const { data } = await supabase
+        .from('users')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single()
+      return data?.is_admin === true
+    },
+    enabled: !!user?.id,
+    staleTime: 0,
+  })
+  
+  if (authLoading || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F2F4F9]">
         <div className="w-8 h-8 border-4 border-[#0CBCE5] border-t-transparent rounded-full animate-spin" />
@@ -237,7 +252,7 @@ export function SimuladorPage() {
     )
   }
   
-  if (profile.is_admin !== true) {
+  if (!profile) {
     return <AccessDenied />
   }
 
