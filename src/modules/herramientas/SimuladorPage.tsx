@@ -226,8 +226,6 @@ const DEFAULT_CONFIG: SimConfig = {
 }
 
 export function SimuladorPage() {
-  const { user, loading: authLoading } = useAuth()
-  
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   const { user, loading: authLoading } = useAuth()
   
