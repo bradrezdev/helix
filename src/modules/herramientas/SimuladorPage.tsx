@@ -228,6 +228,9 @@ const DEFAULT_CONFIG: SimConfig = {
 export function SimuladorPage() {
   const { user, loading: authLoading } = useAuth()
   
+  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
+  const { user, loading: authLoading } = useAuth()
+  
   // Query ALWAYS at top level - cannot be conditional
   const { data: isAdmin, isLoading: profileLoading } = useQuery({
     queryKey: ['admin-check', user?.id],
@@ -244,6 +247,15 @@ export function SimuladorPage() {
     staleTime: 0,
   })
   
+  // State and memo here, after all hooks are called
+  const [cfg, setCfg] = useState<SimConfig>(DEFAULT_CONFIG)
+  const bonuses = useMemo(() => calcBonuses(cfg), [cfg])
+  
+  function update<K extends keyof SimConfig>(key: K, value: SimConfig[K]) {
+    setCfg((prev) => ({ ...prev, [key]: value }))
+  }
+  
+  // NOW we can do conditional returns
   if (authLoading || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F2F4F9]">
@@ -254,14 +266,6 @@ export function SimuladorPage() {
   
   if (!isAdmin) {
     return <AccessDenied />
-  }
-
-  const [cfg, setCfg] = useState<SimConfig>(DEFAULT_CONFIG)
-
-  const bonuses = useMemo(() => calcBonuses(cfg), [cfg])
-
-  function update<K extends keyof SimConfig>(key: K, value: SimConfig[K]) {
-    setCfg((prev) => ({ ...prev, [key]: value }))
   }
 
   return (
