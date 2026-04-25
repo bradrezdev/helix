@@ -1,80 +1,199 @@
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Calculator, TrendingUp, Users, Award, Infinity, Star, AlertCircle, Lock } from 'lucide-react'
+import { Calculator, TrendingUp, Users, Award, Infinity, Star, AlertCircle, Lock, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabase'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface SimConfig {
-  directosPorPersona: number   // direct sponsors per person
-  nivelesProfundidad: number   // network depth 1-9
-  pvPorPersona: number         // avg PV per person
-  cvPorPersona: number         // avg CV per person
+  directosPorPersona: number    // direct sponsors per person
+  nivelesProfundidad: number  // network depth
+  pvPorPersona: number      // avg PV per person
+  cvPorPersona: number    // avg CV per person
+  rango: Rank            // user's rank
 }
+
+type Rank = 'Bronce' | 'Plata' | 'Oro' | 'Platino' | 'Diamante' | 'Doble Diamante' | 'Triple Diamante' | 'Diamante Embajador' | 'Doble Diamante Embajador' | 'Triple Diamante Embajador'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 // Unilevel percentages by level index (0=level 1 through 8=level 9)
 const UNILEVEL_PCT = [0.06, 0.08, 0.10, 0.12, 0.05, 0.04, 0.03, 0.02, 0.02]
 
-// Match bonus: simplified percentage based on network depth
-// Each entry is [depth, pct] - for depth 1: 25%, depth 2+: based on depth tiers
-const MATCH_TABLE: [number, number][] = [
-  [1, 0.25],   // direct level: 25%
-  [2, 0.10],   // depth 2: 10%
-  [3, 0.05],   // depth 3: 5%
-]
-
-// ─── Calculation logic ────────────────────────────────────────────────────────
-
-interface BonusBreakdown {
-  patrocinio: number    // direct sponsor bonuses
-  unilevel: number      // unilevel 9 levels
-  match: number         // match bonus
-  total: number         // recurring sum
+// Match bonus by rank: pct_n1 through pct_n5
+const MATCH_BONUS: Record<Rank, number[]> = {
+  Bronce: [],
+  Plata: [0.05],
+  Oro: [0.10],
+  Platino: [0.15],
+  Diamante: [0.25, 0.05],
+  'Doble Diamante': [0.25, 0.10, 0.10],
+  'Triple Diamante': [0.25, 0.15, 0.10, 0.05],
+  'Diamante Embajador': [0.25, 0.15, 0.10, 0.05, 0.01],
+  'Doble Diamante Embajador': [0.25, 0.15, 0.10, 0.05, 0.03],
+  'Triple Diamante Embajador': [0.25, 0.15, 0.10, 0.05, 0.05],
 }
 
-function calcBonuses(cfg: SimConfig): BonusBreakdown {
-  const { directosPorPersona, nivelesProfundidad, pvPorPersona, cvPorPersona } = cfg
+// Infinito Patrocinio by rank (levels 4+ in sponsor tree)
+const INFINITO_PATROCINIO: Record<Rank, number> = {
+  Bronce: 0.06,
+  Plata: 0.07,
+  Oro: 0.08,
+  Platino: 0.09,
+  Diamante: 0.10,
+  'Doble Diamante': 0.11,
+  'Triple Diamante': 0.12,
+  'Diamante Embajador': 0.13,
+  'Doble Diamante Embajador': 0.14,
+  'Triple Diamante Embajador': 0.15,
+}
 
-  // ── Patrocinio (sponsor levels 1–3) ──
-  // Level 1 = direct sponsors
-  const l1cv = directosPorPersona * cvPorPersona
-  const l2cv = directosPorPersona * directosPorPersona * cvPorPersona
-  const l3cv = directosPorPersona * directosPorPersona * directosPorPersona * cvPorPersona
+// Infinito Uninivel (level 10+)
+const INFINITO_UNILEVEL_PCT = 0.02
 
-  const patrocinio = l1cv * 0.20 + l2cv * 0.10 + l3cv * 0.05
+// ─── Calculation logic ────────────────────────────────────────────────────────────────
 
-  // ── Unilevel (9 levels, capped by network depth) ──
-  let unilevel = 0
-  for (let d = 1; d <= 9; d++) {
-    const count = d <= nivelesProfundidad
-      ? Math.pow(directosPorPersona, d)
-      : 0
-    unilevel += count * pvPorPersona * UNILEVEL_PCT[d - 1]
+interface BonoBreakdown {
+  network: number
+  vgTotal: number
+  rango: Rank
+  patrocinio: { level1: number; level2: number; level3: number; total: number }
+  infinitoPatrocinio: number
+  unilevel: { level: number; personas: number; pv: number; cv: number; bono: number; pct: number }[]
+  unilevelTotal: number
+  infinitoUnilevel: number
+  match: { level: number; personas: number; unilevelEarnings: number; bono: number; pct: number }[]
+  matchTotal: number
+  teamStructure: { level: number; personas: number; pv: number; cv: number; vg: number; cvg: number }[]
+  total: number
+}
+
+function calcBonuses(cfg: SimConfig): BonoBreakdown {
+  const { directosPorPersona, nivelesProfundidad, pvPorPersona, cvPorPersona, rango } = cfg
+
+  // ── Network & VG ──
+  // Geometric series:directos^1 + directos^2 + ... + directos^n
+  const levels = Math.min(nivelesProfundidad, 9)
+  let network = 0
+  const levelCounts: number[] = []
+  for (let l = 1; l <= levels; l++) {
+    const count = Math.pow(directosPorPersona, l)
+    levelCounts.push(count)
+    network += count
   }
 
-  // ── Match Bonus (simplified: % of unilevel earnings by depth) ──
-  let match = 0
-  for (const [depth, pct] of MATCH_TABLE) {
-    if (depth <= nivelesProfundidad) {
-      const count = Math.pow(directosPorPersona, depth)
-      match += count * pvPorPersona * pct * UNILEVEL_PCT[0] // rough est based on level 1 earnings
+  const vgTotal = network * cvPorPersona // group volume = total CV in network
+
+  // ── Bono Patrocinio (sponsor levels 1-3) ──
+  const l1Cv = levelCounts[0] || 0
+  const l2Cv = levelCounts[1] || 0
+  const l3Cv = levelCounts[2] || 0
+
+  const patrocinio = {
+    level1: l1Cv * cvPorPersona * 0.20,
+    level2: l2Cv * cvPorPersona * 0.10,
+    level3: l3Cv * cvPorPersona * 0.05,
+    total: 0,
+  }
+  patrocinio.total = patrocinio.level1 + patrocinio.level2 + patrocinio.level3
+
+  // ── Bono Infinito Patrocinio (sponsor levels 4+) ──
+  const infPatrocinioRank = INFINITO_PATROCINIO[rango]
+  let infPatrocinio = 0
+  for (let l = 4; l <= Math.min(levels, 9); l++) {
+    const idx = l - 1
+    if (levelCounts[idx]) {
+      infPatrocinio += levelCounts[idx] * cvPorPersona * infPatrocinioRank
     }
   }
 
-  const total = patrocinio + unilevel + match
+  // ── Bono Uninivel (levels 1-9) ──
+  const unilevel: BonoBreakdown['unilevel'] = []
+  let unilevelTotal = 0
+  for (let l = 1; l <= levels; l++) {
+    const personas = levelCounts[l - 1] || 0
+    const pv = personas * pvPorPersona
+    const cv = personas * cvPorPersona
+    const bono = pv * UNILEVEL_PCT[l - 1]
+    unilevel.push({
+      level: l,
+      personas,
+      pv,
+      cv,
+      bono,
+      pct: UNILEVEL_PCT[l - 1] * 100,
+    })
+    unilevelTotal += bono
+  }
+
+  // ── Bono Infinito Uninivel (level 10+) ──
+  // For simulation, treat nivel 10+ as nivel 10
+  const infinitoUnilevel = levelCounts.reduce((sum, count, idx) => {
+    if (idx >= 10) return sum + count * pvPorPersona * INFINITO_UNILEVEL_PCT
+    return sum
+  }, 0)
+
+  // ── Bono Match (by rank on UNILEVEL earnings) ──
+  const matchPcts = MATCH_BONUS[rango]
+  const match: BonoBreakdown['match'] = []
+  let matchTotal = 0
+
+  // Match applies to unilevel earnings at each level
+  for (let l = 1; l <= Math.min(levels, matchPcts.length); l++) {
+    const ul = unilevel[l - 1]
+    if (ul) {
+      const pct = matchPcts[l - 1]
+      const bono = ul.bono * pct
+      match.push({
+        level: l,
+        personas: ul.personas,
+        unilevelEarnings: ul.bono, // Base is unilevel bonus at this level
+        bono,
+        pct: pct * 100,
+      })
+      matchTotal += bono
+    }
+  }
+
+  // ── Team Structure Table ──
+  const teamStructure: BonoBreakdown['teamStructure'] = []
+  let cvgAccum = 0
+  for (let l = 1; l <= levels; l++) {
+    const personas = levelCounts[l - 1] || 0
+    const pv = personas * pvPorPersona
+    const cv = personas * cvPorPersona
+    cvgAccum += cv
+    teamStructure.push({
+      level: l,
+      personas,
+      pv,
+      cv,
+      vg: personas > 0 ? cvPorPersona : 0, // per person
+      cvg: cvgAccum, // cumulative VG
+    })
+  }
+
+  // ── Total ──
+  const total = patrocinio.total + infPatrocinio + unilevelTotal + infinitoUnilevel + matchTotal
 
   return {
+    network,
+    vgTotal,
+    rango,
     patrocinio,
+    infinitoPatrocinio: infPatrocinio,
     unilevel,
+    unilevelTotal,
+    infinitoUnilevel,
     match,
+    matchTotal,
+    teamStructure,
     total,
   }
 }
 
-// ─── Formatting ───────────────────────────────────────────────────────────────
+// ─── Formatting ─────────────────────────────────────────────────────────────────
 
 function fmt(val: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -85,7 +204,11 @@ function fmt(val: number): string {
   }).format(val)
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+function fmtNum(val: number): string {
+  return new Intl.NumberFormat('en-US').format(val)
+}
+
+// ─── Sub-components ───────────────────────────────────────��───────────────────────────
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
@@ -187,6 +310,130 @@ function BonusCard({
   )
 }
 
+function DataRow({
+  label,
+  value,
+  bold = false,
+}: {
+  label: string
+  value: string | number
+  bold?: boolean
+}) {
+  return (
+    <div className="flex justify-between items-center py-2 border-b border-[#F3F4F6] last:border-0">
+      <span
+        className={`text-[12px] ${bold ? 'font-semibold' : 'font-normal'}`}
+        style={{ color: '#374151', fontFamily: 'Poppins, sans-serif' }}
+      >
+        {label}
+      </span>
+      <span
+        className={`text-[12px] ${bold ? 'font-semibold' : 'font-medium'}`}
+        style={{ color: bold ? '#062A63' : '#4B5563', fontFamily: 'Poppins, sans-serif' }}
+      >
+        {typeof value === 'number' ? fmtNum(value) : value}
+      </span>
+    </div>
+  )
+}
+
+function TableRow({
+  cells,
+  bold = false,
+}: {
+  cells: (string | number)[]
+  bold?: boolean
+}) {
+  return (
+    <div
+      className={`grid gap-2 py-2 px-3 ${bold ? 'bg-[#F8FAFC] rounded-lg' : ''}`}
+      style={{
+        gridTemplateColumns: '60px 70px 80px 80px 80px 70px',
+      }}
+    >
+      {cells.map((cell, i) => (
+        <span
+          key={i}
+          className={`text-[11px] ${bold ? 'font-semibold' : 'font-normal'} truncate`}
+          style={{
+            color: i === 0 ? '#374151' : '#4B5563',
+            fontFamily: 'Poppins, sans-serif',
+            textAlign: i > 0 ? 'right' : 'left',
+          }}
+        >
+          {typeof cell === 'number' ? (i <= 4 ? fmtNum(cell) : `${cell}%`) : cell}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+function TableHeader() {
+  return (
+    <div
+      className="grid gap-2 py-2 px-3 rounded-t-lg"
+      style={{
+        gridTemplateColumns: '60px 70px 80px 80px 80px 70px',
+        background: '#062A63',
+      }}
+    >
+      {['Nivel', 'Personas', 'PV', 'CV', 'Bono', '%'].map((h) => (
+        <span
+          key={h}
+          className="text-[10px] font-semibold uppercase"
+          style={{ color: 'white', fontFamily: 'Poppins, sans-serif', textAlign: 'center' }}
+        >
+          {h}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+function TableHeaderWide() {
+  return (
+    <div
+      className="grid gap-2 py-2 px-3 rounded-t-lg"
+      style={{
+        gridTemplateColumns: '50px 70px 80px 80px 80px 80px',
+        background: '#062A63',
+      }}
+    >
+      {['Nivel', 'Personas', 'PV', 'CV', 'VG', 'CVG'].map((h) => (
+        <span
+          key={h}
+          className="text-[10px] font-semibold uppercase"
+          style={{ color: 'white', fontFamily: 'Poppins, sans-serif', textAlign: 'center' }}
+        >
+          {h}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+function MatchTableHeader() {
+  return (
+    <div
+      className="grid gap-2 py-2 px-3 rounded-t-lg"
+      style={{
+        gridTemplateColumns: '60px 70px 100px 80px 70px',
+        background: '#062A63',
+      }}
+    >
+      {['Nivel', 'Personas', 'Unilevel', 'Bono', '%'].map((h) => (
+        <span
+          key={h}
+          className="text-[10px] font-semibold uppercase"
+          style={{ color: 'white', fontFamily: 'Poppins, sans-serif', textAlign: 'center' }}
+        >
+          {h}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 // ─── Access Denied ─────────────────────────────────────────────────────────────
 
 function AccessDenied() {
@@ -218,17 +465,24 @@ function AccessDenied() {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-const DEFAULT_CONFIG: SimConfig = {
-  directosPorPersona: 3,
-  nivelesProfundidad: 4,
-  pvPorPersona: 100,
-  cvPorPersona: 50,
-}
+// Rank options for dropdown
+const RANK_OPTIONS: Rank[] = [
+  'Bronce',
+  'Plata',
+  'Oro',
+  'Platino',
+  'Diamante',
+  'Doble Diamante',
+  'Triple Diamante',
+  'Diamante Embajador',
+  'Doble Diamante Embajador',
+  'Triple Diamante Embajador',
+]
 
 export function SimuladorPage() {
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   const { user, loading: authLoading } = useAuth()
-  
+
   // Query ALWAYS at top level - cannot be conditional
   const { data: isAdmin, isLoading: profileLoading } = useQuery({
     queryKey: ['admin-check', user?.id],
@@ -244,15 +498,34 @@ export function SimuladorPage() {
     enabled: !!user?.id,
     staleTime: 0,
   })
-  
+
   // State and memo here, after all hooks are called
-  const [cfg, setCfg] = useState<SimConfig>(DEFAULT_CONFIG)
+  const [cfg, setCfg] = useState<SimConfig>({
+    directosPorPersona: 3,
+    nivelesProfundidad: 4,
+    pvPorPersona: 100,
+    cvPorPersona: 50,
+    rango: 'Diamante',
+  })
   const bonuses = useMemo(() => calcBonuses(cfg), [cfg])
-  
+
+  // Track which sections are expanded
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    summary: true,
+    patrocinio: true,
+    unilevel: true,
+    match: false,
+    team: false,
+  })
+
   function update<K extends keyof SimConfig>(key: K, value: SimConfig[K]) {
     setCfg((prev) => ({ ...prev, [key]: value }))
   }
-  
+
+  function toggleSection(section: string) {
+    setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }))
+  }
+
   // NOW we can do conditional returns
   if (authLoading || profileLoading) {
     return (
@@ -261,7 +534,7 @@ export function SimuladorPage() {
       </div>
     )
   }
-  
+
   if (!isAdmin) {
     return <AccessDenied />
   }
@@ -372,31 +645,62 @@ export function SimuladorPage() {
               onChange={(e) => update('cvPorPersona', Math.max(0, Number(e.target.value) || 0))}
             />
           </div>
+
+          {/* Rango */}
+          <div>
+            <InputLabel>Rango</InputLabel>
+            <select
+              className={inputCls}
+              style={{ fontFamily: 'Poppins, sans-serif', color: '#062A63' }}
+              value={cfg.rango}
+              onChange={(e) => update('rango', e.target.value as Rank)}
+            >
+              {RANK_OPTIONS.map((rank) => (
+                <option key={rank} value={rank}>
+                  {rank}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* ── Section 2: Results ── */}
         <div>
-          <SectionTitle>Estimado Mensual</SectionTitle>
+          <SectionTitle>Resumen de Ganancias</SectionTitle>
           <div className="space-y-2.5">
             <BonusCard
-              icon={<Users size={18} color={bonuses.patrocinio > 0 ? '#0CBCE5' : '#9CA3AF'} />}
+              icon={<Users size={18} color={bonuses.patrocinio.total > 0 ? '#0CBCE5' : '#9CA3AF'} />}
               label="Bono Patrocinio"
               subtitle="Niveles 1–3 del árbol de patrocinio"
-              amount={bonuses.patrocinio}
+              amount={bonuses.patrocinio.total}
             />
 
             <BonusCard
-              icon={<Star size={18} color={bonuses.unilevel > 0 ? '#0CBCE5' : '#9CA3AF'} />}
+              icon={<Star size={18} color={bonuses.unilevelTotal > 0 ? '#0CBCE5' : '#9CA3AF'} />}
               label="Bono Unilevel"
               subtitle="9 niveles de red unilevel"
-              amount={bonuses.unilevel}
+              amount={bonuses.unilevelTotal}
             />
 
             <BonusCard
-              icon={<Award size={18} color={bonuses.match > 0 ? '#0CBCE5' : '#9CA3AF'} />}
+              icon={<Award size={18} color={bonuses.matchTotal > 0 ? '#0CBCE5' : '#9CA3AF'} />}
               label="Bono Match"
-              subtitle="Sobre ganancias de red patrocinio"
-              amount={bonuses.match}
+              subtitle="Sobre ganancias unilevel"
+              amount={bonuses.matchTotal}
+            />
+
+            <BonusCard
+              icon={<Infinity size={18} color="#0CBCE5" />}
+              label="Bono Infinito Patrocinio"
+              subtitle="Niveles 4+ en árbol de patrocinio"
+              amount={bonuses.infinitoPatrocinio}
+            />
+
+            <BonusCard
+              icon={<TrendingUp size={18} color="#0CBCE5" />}
+              label="Bono Infinito Uninivel"
+              subtitle="Nivel 10+ unilevel"
+              amount={bonuses.infinitoUnilevel}
             />
 
             {/* Total */}
@@ -408,6 +712,182 @@ export function SimuladorPage() {
               highlight
             />
           </div>
+        </div>
+
+        {/* ── Section 3: Network Summary ── */}
+        <div
+          className="rounded-[20px] p-5"
+          style={{
+            background: 'white',
+            boxShadow: '0 2px 16px rgba(6,42,99,0.07)',
+            border: '1px solid rgba(234,236,240,0.8)',
+          }}
+        >
+          <div
+            className="flex justify-between items-center cursor-pointer"
+            onClick={() => toggleSection('summary')}
+          >
+            <SectionTitle>Resumen de Red</SectionTitle>
+            {expandedSections.summary ? (
+              <ChevronUp size={16} color="#062A63" />
+            ) : (
+              <ChevronDown size={16} color="#062A63" />
+            )}
+          </div>
+
+          {expandedSections.summary && (
+            <div className="space-y-1">
+              <DataRow label="Total personas en la red" value={bonuses.network} bold />
+              <DataRow label="VG Total (Group Volume)" value={bonuses.vgTotal} bold />
+              <DataRow label="Rango alcanzado" value={bonuses.rango} bold />
+            </div>
+          )}
+        </div>
+
+        {/* ── Section 4: Bono Patrocinio Detail ── */}
+        <div
+          className="rounded-[20px] p-5"
+          style={{
+            background: 'white',
+            boxShadow: '0 2px 16px rgba(6,42,99,0.07)',
+            border: '1px solid rgba(234,236,240,0.8)',
+          }}
+        >
+          <div
+            className="flex justify-between items-center cursor-pointer"
+            onClick={() => toggleSection('patrocinio')}
+          >
+            <SectionTitle>Detalle Bono Patrocinio</SectionTitle>
+            {expandedSections.patrocinio ? (
+              <ChevronUp size={16} color="#062A63" />
+            ) : (
+              <ChevronDown size={16} color="#062A63" />
+            )}
+          </div>
+
+          {expandedSections.patrocinio && (
+            <div className="space-y-1">
+              <DataRow label="Nivel 1 (20%)" value={bonuses.patrocinio.level1} />
+              <DataRow label="Nivel 2 (10%)" value={bonuses.patrocinio.level2} />
+              <DataRow label="Nivel 3 (5%)" value={bonuses.patrocinio.level3} />
+              <DataRow label="Total" value={bonuses.patrocinio.total} bold />
+            </div>
+          )}
+        </div>
+
+        {/* ── Section 5: Bono Uninivel Detail ── */}
+        <div
+          className="rounded-[20px] p-5"
+          style={{
+            background: 'white',
+            boxShadow: '0 2px 16px rgba(6,42,99,0.07)',
+            border: '1px solid rgba(234,236,240,0.8)',
+          }}
+        >
+          <div
+            className="flex justify-between items-center cursor-pointer"
+            onClick={() => toggleSection('unilevel')}
+          >
+            <SectionTitle>Detalle Bono Uninivel</SectionTitle>
+            {expandedSections.unilevel ? (
+              <ChevronUp size={16} color="#062A63" />
+            ) : (
+              <ChevronDown size={16} color="#062A63" />
+            )}
+          </div>
+
+          {expandedSections.unilevel && (
+            <>
+              <TableHeader />
+              {bonuses.unilevel.map((row) => (
+                <TableRow
+                  key={row.level}
+                  cells={[row.level, row.personas, row.pv, row.cv, row.bono, row.pct]}
+                />
+              ))}
+              <div className="flex justify-between py-2 px-3 mt-2 rounded-lg bg-[#F8FAFC]">
+                <span className="text-[12px] font-semibold" style={{ color: '#062A63' }}>
+                  Total
+                </span>
+                <span className="text-[12px] font-semibold" style={{ color: '#059669' }}>
+                  {fmt(bonuses.unilevelTotal)}
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* ── Section 6: Bono Match Detail ── */}
+        <div
+          className="rounded-[20px] p-5"
+          style={{
+            background: 'white',
+            boxShadow: '0 2px 16px rgba(6,42,99,0.07)',
+            border: '1px solid rgba(234,236,240,0.8)',
+          }}
+        >
+          <div
+            className="flex justify-between items-center cursor-pointer"
+            onClick={() => toggleSection('match')}
+          >
+            <SectionTitle>Detalle Bono Match</SectionTitle>
+            {expandedSections.match ? (
+              <ChevronUp size={16} color="#062A63" />
+            ) : (
+              <ChevronDown size={16} color="#062A63" />
+            )}
+          </div>
+
+          {expandedSections.match && (
+            <>
+              <MatchTableHeader />
+              {bonuses.match.map((row) => (
+                <TableRow key={row.level} cells={[row.level, row.personas, row.unilevelEarnings, row.bono, row.pct]} />
+              ))}
+              <div className="flex justify-between py-2 px-3 mt-2 rounded-lg bg-[#F8FAFC]">
+                <span className="text-[12px] font-semibold" style={{ color: '#062A63' }}>
+                  Total
+                </span>
+                <span className="text-[12px] font-semibold" style={{ color: '#059669' }}>
+                  {fmt(bonuses.matchTotal)}
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* ── Section 7: Team Structure ── */}
+        <div
+          className="rounded-[20px] p-5"
+          style={{
+            background: 'white',
+            boxShadow: '0 2px 16px rgba(6,42,99,0.07)',
+            border: '1px solid rgba(234,236,240,0.8)',
+          }}
+        >
+          <div
+            className="flex justify-between items-center cursor-pointer"
+            onClick={() => toggleSection('team')}
+          >
+            <SectionTitle>Estructura de Equipo</SectionTitle>
+            {expandedSections.team ? (
+              <ChevronUp size={16} color="#062A63" />
+            ) : (
+              <ChevronDown size={16} color="#062A63" />
+            )}
+          </div>
+
+          {expandedSections.team && (
+            <>
+              <TableHeaderWide />
+              {bonuses.teamStructure.map((row) => (
+                <TableRow
+                  key={row.level}
+                  cells={[row.level, row.personas, row.pv, row.cv, row.vg, row.cvg]}
+                />
+              ))}
+            </>
+          )}
         </div>
 
         {/* ── Disclaimer ── */}
@@ -425,7 +905,7 @@ export function SimuladorPage() {
           >
             <span className="font-semibold">Estimado ilustrativo.</span> Los resultados reales
             dependen del desempeño de tu red. Los cálculos son aproximaciones basadas en los
-            parámetros ingresados y no garantizan ingresos.
+            parámetros ingresados y no garantiza ingresos.
           </p>
         </div>
       </div>
