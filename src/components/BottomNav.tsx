@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from '@tanstack/react-router'
+import type { LucideIcon } from 'lucide-react'
 import {
   LayoutDashboard,
   Building2,
@@ -11,14 +12,8 @@ import {
   Wallet,
   Plus,
   Plane,
-  Calculator,
-} from 'lucide-react'
-  Wallet,
-  Plus,
-  Plane,
   ShieldCheck,
   Calculator,
-  type LucideIcon,
 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useProfile } from '../hooks/useProfile'
