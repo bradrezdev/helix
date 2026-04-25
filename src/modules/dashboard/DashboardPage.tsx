@@ -97,7 +97,7 @@ function ReferralLinkCard({ userId }: { userId: number | undefined }) {
         className="shrink-0 px-4 py-2 rounded-full text-xs font-semibold text-white transition-all active:scale-95"
         style={{ background: copied ? '#32D74B' : '#0CBCE5' }}
       >
-        {copied ? 'Copiado ✓' : 'Copiar'}
+        {copied ? 'Copiado X' : 'Copiar'}
       </button>
     </div>
   )
@@ -106,10 +106,10 @@ function ReferralLinkCard({ userId }: { userId: number | undefined }) {
 // ─── WalletMovements ──────────────────────────────────────────────────────────
 
 function txTypeIcon(type: string): string {
-  if (type === 'order_payment') return '💳'
+  if (type === 'order_payment') return '[CARD]'
   if (type === 'commission_payout') return '⬆️'
   if (type === 'refund') return '↩️'
-  return '➕' // manual_credit, bonus
+  return '[PLUS]' // manual_credit, bonus
 }
 
 function WalletMovements() {

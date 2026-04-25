@@ -51,7 +51,7 @@ export function RegisterByLinkPage() {
     return (
       <div className="min-h-screen bg-[#F2F4F9] flex items-center justify-center px-6">
         <div className="text-center">
-          <p className="text-2xl mb-2">🔍</p>
+          <p className="text-2xl mb-2">[CARD]</p>
           <h2 className="font-bold text-lg mb-1" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
             Link no encontrado
           </h2>

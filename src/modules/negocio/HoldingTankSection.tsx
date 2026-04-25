@@ -322,12 +322,12 @@ export function HoldingTankSection({ holdingTankCount }: HoldingTankSectionProps
               </div>
             ) : error ? (
               <div className="flex flex-col items-center gap-2 py-10 text-sm text-gray-400 px-5">
-                <span className="text-2xl">⚠️</span>
+                <span className="text-2xl">[WARN]</span>
                 <p>No se pudo cargar el holding tank</p>
               </div>
             ) : members.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-10 text-sm text-gray-400 px-5">
-                <span className="text-2xl">✅</span>
+                <span className="text-2xl">[OK]</span>
                 <p>No tienes usuarios en espera</p>
               </div>
             ) : (

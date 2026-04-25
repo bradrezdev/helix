@@ -264,7 +264,7 @@ export function RegisterForm({ sponsor, onSuccess }: RegisterFormProps) {
             {sponsorStatus === 'found' && sponsorName && (
               <span className="text-[11px] font-medium px-2 py-0.5 rounded-full self-start"
                 style={{ background: 'rgba(12,188,229,0.12)', color: '#0CBCE5', fontFamily: 'Poppins, sans-serif' }}>
-                ✓ {sponsorName}
+                X {sponsorName}
               </span>
             )}
             {sponsorStatus === 'not_found' && (
@@ -469,7 +469,7 @@ export function RegisterForm({ sponsor, onSuccess }: RegisterFormProps) {
             className="mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all"
             style={{ borderColor: tcAccepted ? '#062A63' : '#D1D5DB', background: tcAccepted ? '#062A63' : 'transparent' }}
           >
-            {tcAccepted && <span className="text-white text-[10px] font-bold">✓</span>}
+            {tcAccepted && <span className="text-white text-[10px] font-bold">X</span>}
           </button>
           <p className="text-[12px] leading-relaxed" style={{ color: '#6B7280', fontFamily: 'Poppins, sans-serif' }}>
             Acepto los{' '}

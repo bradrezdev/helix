@@ -124,7 +124,7 @@ export function CheckoutPage() {
           Orden #{orderResult.order_id}
         </p>
         <p className="text-xs mb-8" style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}>
-          Estado: {orderResult.status === 'paid' ? 'Pagado ✓' : 'Pendiente'}
+          Estado: {orderResult.status === 'paid' ? 'Pagado X' : 'Pendiente'}
         </p>
         <button
           onClick={() => navigate({ to: '/ordenes' })}
@@ -526,7 +526,7 @@ function DireccionPickerSheet({ open, onClose, direcciones, currentDefaultId, on
             Mis direcciones
           </h2>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-            <span style={{ color: '#6B7280', fontSize: 16 }}>✕</span>
+            <span style={{ color: '#6B7280', fontSize: 16 }}>X</span>
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-5 pb-6 flex flex-col gap-2">
