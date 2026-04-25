@@ -14,6 +14,7 @@ import { AdminPage } from '../modules/admin/AdminPage'
 import { AdminGuard } from '../components/AdminGuard'
 import { OrdenDetailPage } from '../modules/pedidos/OrdenDetailPage'
 import { SimuladorPage } from '../modules/herramientas/SimuladorPage'
+import { RetirosPage } from '../modules/retiros/RetirosPage'
 
 // Helper: check auth
 async function requireAuth() {
@@ -142,6 +143,12 @@ const simuladorRoute = createRoute({
   component: SimuladorPage,
 })
 
+const retirosRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/retiros',
+  component: RetirosPage,
+})
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
   registerByLinkRoute,
@@ -157,6 +164,7 @@ const routeTree = rootRoute.addChildren([
     adminRoute,
     pedidosRedirectRoute,
     simuladorRoute,
+    retirosRoute,
   ]),
 ])
 
