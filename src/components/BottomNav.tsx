@@ -12,6 +12,7 @@ import {
   Plus,
   Plane,
   ShieldCheck,
+  Calculator,
   type LucideIcon,
 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
@@ -33,6 +34,7 @@ const NAV_ITEMS: NavItem[] = [
 
 const DROPDOWN_ITEMS = [
   { icon: Library, label: 'Herramientas de negocio', route: null },
+  { icon: Calculator, label: 'Simulador de Ganancias', route: '/simulador' },
   { icon: ArrowDownToLine, label: 'Retiro a cuenta bancaria', route: null },
   { icon: Wallet, label: 'Transferencia interna', route: null },
   { icon: Plus, label: 'Nuevo registro', route: null },

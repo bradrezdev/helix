@@ -130,7 +130,7 @@ export function CollapsibleNetwork({ userId }: CollapsibleNetworkProps) {
         )}
       >
         {/* Chart — relative container with tabs inside */}
-        <div className="h-[420px] relative border-t border-[#EAECF0]">
+        <div className="h-[520px] relative border-t border-[#EAECF0]">
           {/* Tab switcher — inside chart, top-center */}
           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
             <div className="bg-white/90 backdrop-blur-sm rounded-full shadow-md px-1 py-1 flex gap-1">

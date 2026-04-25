@@ -30,10 +30,10 @@ export function GlanceCard({
       : '#062A63'
     return (
       <div
-        className="rounded-[32px] shadow-[0_2px_12px_rgba(6,42,99,0.07)] p-3 justify-items-start"
+        className="rounded-[24px] px-3 py-2 justify-items-start"
         style={{ background: bg }}
       >
-        <p className='text-xs mb-1 text-white/80'>{title}</p>
+        <p className='text-xs text-white/80'>{title}</p>
         <div className="flex gap-2 justify-start">
           <h2 className='text-xl font-bold items-center text-white'>{value}</h2>
         </div>
@@ -50,7 +50,7 @@ export function GlanceCard({
         : ''
 
   return (
-    <div className={`bg-white rounded-[32px] shadow-[0_2px_12px_rgba(6,42,99,0.07)] p-3 justify-items-start ${accentClass}`}>
+    <div className={`bg-white rounded-[32px] p-3 justify-items-start ${accentClass}`}>
       <p className='text-xs mb-1 text-[#383A3F]'>{title}</p>
       <div className="flex gap-2 justify-start">
         <h2 className='text-xl font-bold items-center'>{value}</h2>
@@ -64,7 +64,7 @@ export function GlanceCard({
 
 export function GlanceCardSkeleton() {
   return (
-    <div className="bg-white rounded-[32px] shadow-[0_2px_12px_rgba(6,42,99,0.07)] p-3 animate-pulse">
+    <div className="bg-white rounded-[32px] p-3 animate-pulse">
       <div className="h-3 bg-gray-200 rounded w-1/2 mb-2" />
       <div className="h-6 bg-gray-200 rounded w-3/4" />
     </div>
@@ -85,7 +85,7 @@ export function RankProgressCard({ currentVg, targetVg, nextRank, daysLeft }: Ra
   const progress = isMaxRank ? 100 : Math.min((currentVg / targetVg) * 100, 100)
 
   return (
-    <div className="bg-white rounded-[32px] shadow-[0_2px_12px_rgba(6,42,99,0.07)] p-4">
+    <div className="bg-white rounded-[32px] p-4">
       <div className="flex gap-1 justify-start items-baseline mb-2">
         <h2 className='text-xl font-bold'>{currentVg.toLocaleString('es-MX')}</h2>
         {!isMaxRank && (

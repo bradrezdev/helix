@@ -291,7 +291,6 @@ export function DashboardPage() {
               <GlanceCard
                 title="CV Personal"
                 value={formatNumber(data.personal_cv)}
-                accent="secondary"
               />
             </>
           ) : null}

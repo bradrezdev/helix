@@ -13,6 +13,7 @@ import { CheckoutPage } from '../modules/tienda/CheckoutPage'
 import { AdminPage } from '../modules/admin/AdminPage'
 import { AdminGuard } from '../components/AdminGuard'
 import { OrdenDetailPage } from '../modules/pedidos/OrdenDetailPage'
+import { SimuladorPage } from '../modules/herramientas/SimuladorPage'
 
 // Helper: check auth
 async function requireAuth() {
@@ -135,6 +136,12 @@ const pedidosRedirectRoute = createRoute({
   beforeLoad: () => { throw redirect({ to: '/ordenes' }) },
 })
 
+const simuladorRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/simulador',
+  component: SimuladorPage,
+})
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
   registerByLinkRoute,
@@ -149,6 +156,7 @@ const routeTree = rootRoute.addChildren([
     registerRoute,
     adminRoute,
     pedidosRedirectRoute,
+    simuladorRoute,
   ]),
 ])
 

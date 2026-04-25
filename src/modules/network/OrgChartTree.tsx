@@ -36,57 +36,44 @@ function buildNodeTemplate(node: OrgChartNode): string {
   const initial = getInitial(node.name)
   const rankImage = RANK_IMAGES[node.rank] ?? null
   const membershipLabel = getMembershipLabel(node)
-  const opacity = node.isActive ? '1' : '0.5'
+  const opacity = node.isActive ? '1' : '0.55'
   const borderColor = node.isActive ? '#e5e7eb' : '#f3f4f6'
 
   const avatarHtml = rankImage
-    ? `<img src="${rankImage}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;" />`
-    : `<div style="width:36px;height:36px;border-radius:50%;background:#062A63;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <span style="color:white;font-size:14px;font-weight:600;">${initial}</span>
+    ? `<img src="${rankImage}" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid #e5e7eb;" />`
+    : `<div style="width:34px;height:34px;border-radius:50%;background:#062A63;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <span style="color:white;font-size:13px;font-weight:600;line-height:1;">${initial}</span>
       </div>`
 
   const activeBadge = node.isActive
-    ? `<div style="background:#d1fae5;color:#065f46;font-size:9px;font-weight:600;padding:2px 6px;border-radius:9999px;flex-shrink:0;">Activo</div>`
-    : ''
+    ? `<div style="background:#d1fae5;color:#065f46;font-size:8px;font-weight:700;padding:2px 5px;border-radius:9999px;flex-shrink:0;letter-spacing:0.3px;">Activo</div>`
+    : `<div style="background:#fee2e2;color:#991b1b;font-size:8px;font-weight:700;padding:2px 5px;border-radius:9999px;flex-shrink:0;letter-spacing:0.3px;">Inactivo</div>`
 
   return `
-    <div style="
-      width: 220px;
-      background: white;
-      border-radius: 20px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.10);
-      padding: 10px 12px;
-      font-family: Poppins, sans-serif;
-      opacity: ${opacity};
-      border: 1.5px solid ${borderColor};
-      position: relative;
-      overflow: hidden;
-      cursor: pointer;
-    ">
-      <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-        ${avatarHtml}
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:12px;font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${node.name}</div>
-          <div style="font-size:10px;color:#6b7280;">${membershipLabel}</div>
-        </div>
-        ${activeBadge}
-      </div>
-      <div style="display:flex;gap:4px;">
-        <div style="flex:1;background:#f9fafb;border-radius:10px;padding:4px 6px;text-align:center;">
-          <div style="font-size:9px;color:#9ca3af;">PV</div>
-          <div style="font-size:11px;font-weight:700;color:#062A63;">${node.personalPv}</div>
-        </div>
-        <div style="flex:1;background:#f9fafb;border-radius:10px;padding:4px 6px;text-align:center;">
-          <div style="font-size:9px;color:#9ca3af;">CV</div>
-          <div style="font-size:11px;font-weight:700;color:#062A63;">${node.personalCv}</div>
-        </div>
-        <div style="flex:1;background:#f9fafb;border-radius:10px;padding:4px 6px;text-align:center;">
-          <div style="font-size:9px;color:#9ca3af;">VG</div>
-          <div style="font-size:11px;font-weight:700;color:#0CBCE5;">${node.groupVg}</div>
-        </div>
-      </div>
+<div style="width:100%;height:100%;box-sizing:border-box;padding:8px 10px;background:white;border-radius:16px;border:1.5px solid ${borderColor};box-shadow:0 2px 8px rgba(0,0,0,0.08);font-family:Poppins,sans-serif;opacity:${opacity};cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;">
+  <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;">
+    ${avatarHtml}
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:11px;font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">${node.name}</div>
+      <div style="font-size:9px;color:#6b7280;margin-top:1px;">${membershipLabel}</div>
     </div>
-  `
+    ${activeBadge}
+  </div>
+  <div style="display:flex;gap:3px;">
+    <div style="flex:1;background:#f9fafb;border-radius:8px;padding:3px 4px;text-align:center;">
+      <div style="font-size:8px;color:#9ca3af;font-weight:500;">PV</div>
+      <div style="font-size:10px;font-weight:700;color:#062A63;line-height:1.4;">${node.personalPv}</div>
+    </div>
+    <div style="flex:1;background:#f9fafb;border-radius:8px;padding:3px 4px;text-align:center;">
+      <div style="font-size:8px;color:#9ca3af;font-weight:500;">CV</div>
+      <div style="font-size:10px;font-weight:700;color:#062A63;line-height:1.4;">${node.personalCv}</div>
+    </div>
+    <div style="flex:1;background:#f0fbff;border-radius:8px;padding:3px 4px;text-align:center;">
+      <div style="font-size:8px;color:#0CBCE5;font-weight:500;">VG</div>
+      <div style="font-size:10px;font-weight:700;color:#0CBCE5;line-height:1.4;">${node.groupVg}</div>
+    </div>
+  </div>
+</div>`
 }
 
 interface OrgChartTreeProps {
@@ -103,9 +90,17 @@ export function OrgChartTree({ nodes, treeType, onNodeClick }: OrgChartTreeProps
   useEffect(() => {
     if (!containerRef.current || nodes.length === 0) return
 
+    // Destroy previous chart instance fully before re-creating
+    if (chartRef.current) {
+      try {
+        containerRef.current.innerHTML = ''
+      } catch (_) { /* ignore */ }
+      chartRef.current = null
+    }
+
     const chartData: OrgChartNode[] = nodes.map((n) => ({
       id: n.id,
-      parentId: n.parentId,
+      parentId: n.parentId ?? null,
       name: n.name,
       rank: n.rank,
       isActive: n.isActive,
@@ -115,35 +110,22 @@ export function OrgChartTree({ nodes, treeType, onNodeClick }: OrgChartTreeProps
       kitType: n.kitType,
     }))
 
-    if (!chartRef.current) {
-      chartRef.current = new OrgChart<OrgChartNode>()
-    }
-
-    const chart = chartRef.current
+    const chart = new OrgChart<OrgChartNode>()
+    chartRef.current = chart
 
     chart
       .container(containerRef.current)
       .data(chartData)
       .nodeWidth(() => 220)
-      .nodeHeight(() => 136)
-      .childrenMargin(() => 40)
+      .nodeHeight(() => 130)
+      .childrenMargin(() => 50)
       .compactMarginBetween(() => 15)
       .compactMarginPair(() => 80)
       .neighbourMargin(() => 20)
       .siblingsMargin(() => 20)
       .buttonContent(({ node }) => {
-        const count = node.data._directSubordinates
-        return `<div style="
-          border-radius: 20px;
-          background: #062A63;
-          color: white;
-          font-size: 10px;
-          font-family: Poppins, sans-serif;
-          font-weight: 600;
-          padding: 3px 10px;
-          cursor: pointer;
-          border: none;
-        ">${count > 0 ? `▾ ${count}` : '▸ 0'}</div>`
+        const count = (node.data as OrgChartNode & { _directSubordinates?: number })._directSubordinates ?? 0
+        return `<div style="border-radius:20px;background:#062A63;color:white;font-size:10px;font-family:Poppins,sans-serif;font-weight:600;padding:3px 10px;cursor:pointer;">${count} ▾</div>`
       })
       .nodeContent((node) => buildNodeTemplate(node.data))
       .onNodeClick((nodeData) => {
@@ -152,11 +134,14 @@ export function OrgChartTree({ nodes, treeType, onNodeClick }: OrgChartTreeProps
           if (original) onNodeClick(original)
         }
       })
-      .initialZoom(0.8)
+      .initialZoom(0.75)
       .render()
 
     return () => {
-      // cleanup handled by re-render
+      if (containerRef.current) {
+        containerRef.current.innerHTML = ''
+      }
+      chartRef.current = null
     }
   }, [nodes, treeType])
 
@@ -173,7 +158,7 @@ export function OrgChartTree({ nodes, treeType, onNodeClick }: OrgChartTreeProps
       }
     >
       {/* Controls — bottom-right */}
-      <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
+      <div className="absolute bottom-24 right-4 z-10 flex flex-col gap-2">
         <button
           onClick={zoomIn}
           className="w-9 h-9 bg-white rounded-2xl shadow-md border border-gray-100 flex items-center justify-center text-[#062A63] text-lg font-light hover:shadow-lg transition-shadow"
@@ -225,7 +210,7 @@ export function OrgChartTree({ nodes, treeType, onNodeClick }: OrgChartTreeProps
       </div>
 
       {/* Chart container */}
-      <div ref={containerRef} style={{ width: '100%', height: '100%', paddingTop: '52px', boxSizing: 'border-box' }} />
+      <div ref={containerRef} style={{ width: '100%', height: '100%', boxSizing: 'border-box' }} />
     </div>
   )
 }
