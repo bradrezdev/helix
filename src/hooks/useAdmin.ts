@@ -7,5 +7,5 @@ import { useProfile } from './useProfile'
 export function useIsAdmin(): boolean {
   const { user } = useAuth()
   const { data: profile } = useProfile(user?.id ?? '')
-  return (profile as (typeof profile & { is_admin?: boolean }) | null)?.is_admin === true
+  return profile?.is_admin === true
 }

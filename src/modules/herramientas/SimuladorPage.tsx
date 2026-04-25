@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Calculator, TrendingUp, Users, Award, Infinity, Star, AlertCircle, Lock } from 'lucide-react'
-import { useIsAdmin } from '../../hooks/useAdmin'
+import { useAuth } from '../../hooks/useAuth'
+import { useProfile } from '../../hooks/useProfile'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -224,9 +225,19 @@ const DEFAULT_CONFIG: SimConfig = {
 }
 
 export function SimuladorPage() {
-  const isAdmin = useIsAdmin()
-
-  if (!isAdmin) {
+  const { user, loading: authLoading } = useAuth()
+  const { data: profile } = useProfile(user?.id ?? '')
+  
+  // Wait for auth and profile to load
+  if (authLoading || !profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F2F4F9]">
+        <div className="w-8 h-8 border-4 border-[#0CBCE5] border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+  
+  if (profile.is_admin !== true) {
     return <AccessDenied />
   }
 
