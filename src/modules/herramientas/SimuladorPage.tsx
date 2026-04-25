@@ -321,7 +321,7 @@ export function SimuladorPage() {
               max={10}
               value={cfg.directosPorPersona}
               onChange={(e) =>
-                update('directosPorPersona', Math.min(10, Math.max(1, Number(e.target.value))))
+                update('directosPorPersona', Math.min(10, Math.max(1, Number(e.target.value) || 0)))
               }
             />
           </div>
@@ -340,7 +340,7 @@ export function SimuladorPage() {
               max={9}
               value={cfg.nivelesProfundidad}
               onChange={(e) =>
-                update('nivelesProfundidad', Math.min(9, Math.max(1, Number(e.target.value))))
+                update('nivelesProfundidad', Math.min(9, Math.max(1, Number(e.target.value) || 0)))
               }
             />
           </div>
@@ -354,7 +354,7 @@ export function SimuladorPage() {
               style={{ fontFamily: 'Poppins, sans-serif', color: '#062A63' }}
               min={0}
               value={cfg.pvPorPersona}
-              onChange={(e) => update('pvPorPersona', Math.max(0, Number(e.target.value)))}
+              onChange={(e) => update('pvPorPersona', Math.max(0, Number(e.target.value) || 0))}
             />
           </div>
 
@@ -367,7 +367,7 @@ export function SimuladorPage() {
               style={{ fontFamily: 'Poppins, sans-serif', color: '#062A63' }}
               min={0}
               value={cfg.cvPorPersona}
-              onChange={(e) => update('cvPorPersona', Math.max(0, Number(e.target.value)))}
+              onChange={(e) => update('cvPorPersona', Math.max(0, Number(e.target.value) || 0))}
             />
           </div>
         </div>
