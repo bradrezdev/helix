@@ -11,12 +11,51 @@ interface SimConfig {
   nivelesProfundidad: number  // network depth
   pvPorPersona: number      // avg PV per person
   cvPorPersona: number    // avg CV per person
-  rango: Rank            // user's rank
 }
 
 type Rank = 'Bronce' | 'Plata' | 'Oro' | 'Platino' | 'Diamante' | 'Doble Diamante' | 'Triple Diamante' | 'Diamante Embajador' | 'Doble Diamante Embajador' | 'Triple Diamante Embajador'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
+
+// Rank requirements: [personal VG, group VG]
+const RANK_REQUIREMENTS: Record<Rank, [number, number]> = {
+  Bronce: [100, 500],
+  Plata: [200, 1000],
+  Oro: [300, 2500],
+  Platino: [400, 5000],
+  Diamante: [500, 10000],
+  'Doble Diamante': [750, 20000],
+  'Triple Diamante': [1000, 40000],
+  'Diamante Embajador': [1500, 75000],
+  'Doble Diamante Embajador': [2000, 150000],
+  'Triple Diamante Embajador': [3000, 300000],
+}
+
+// Get rank options ordered from lowest to highest
+const RANK_OPTIONS: Rank[] = [
+  'Bronce',
+  'Plata',
+  'Oro',
+  'Platino',
+  'Diamante',
+  'Doble Diamante',
+  'Triple Diamante',
+  'Diamante Embajador',
+  'Doble Diamante Embajador',
+  'Triple Diamante Embajador',
+]
+
+// Calculate achievable rank based on network VG
+function calculateAchievableRank(vgTotal: number): Rank {
+  let achievable: Rank = 'Bronce'
+  for (const rank of RANK_OPTIONS) {
+    const [, groupVG] = RANK_REQUIREMENTS[rank]
+    if (vgTotal >= groupVG) {
+      achievable = rank
+    }
+  }
+  return achievable
+}
 
 // Unilevel percentages by level index (0=level 1 through 8=level 9)
 const UNILEVEL_PCT = [0.06, 0.08, 0.10, 0.12, 0.05, 0.04, 0.03, 0.02, 0.02]
@@ -70,7 +109,7 @@ interface BonoBreakdown {
 }
 
 function calcBonuses(cfg: SimConfig): BonoBreakdown {
-  const { directosPorPersona, nivelesProfundidad, pvPorPersona, cvPorPersona, rango } = cfg
+  const { directosPorPersona, nivelesProfundidad, pvPorPersona, cvPorPersona } = cfg
 
   // ── Network & VG ──
   // Geometric series:directos^1 + directos^2 + ... + directos^n
@@ -84,6 +123,9 @@ function calcBonuses(cfg: SimConfig): BonoBreakdown {
   }
 
   const vgTotal = network * cvPorPersona // group volume = total CV in network
+
+  // Calculate achievable rank based on VG
+  const rango = calculateAchievableRank(vgTotal)
 
   // ── Bono Patrocinio (sponsor levels 1-3) ──
   const l1Cv = levelCounts[0] || 0
@@ -465,20 +507,6 @@ function AccessDenied() {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-// Rank options for dropdown
-const RANK_OPTIONS: Rank[] = [
-  'Bronce',
-  'Plata',
-  'Oro',
-  'Platino',
-  'Diamante',
-  'Doble Diamante',
-  'Triple Diamante',
-  'Diamante Embajador',
-  'Doble Diamante Embajador',
-  'Triple Diamante Embajador',
-]
-
 export function SimuladorPage() {
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   const { user, loading: authLoading } = useAuth()
@@ -505,7 +533,6 @@ export function SimuladorPage() {
     nivelesProfundidad: 4,
     pvPorPersona: 100,
     cvPorPersona: 50,
-    rango: 'Diamante',
   })
   const bonuses = useMemo(() => calcBonuses(cfg), [cfg])
 
@@ -644,23 +671,6 @@ export function SimuladorPage() {
               value={cfg.cvPorPersona}
               onChange={(e) => update('cvPorPersona', Math.max(0, Number(e.target.value) || 0))}
             />
-          </div>
-
-          {/* Rango */}
-          <div>
-            <InputLabel>Rango</InputLabel>
-            <select
-              className={inputCls}
-              style={{ fontFamily: 'Poppins, sans-serif', color: '#062A63' }}
-              value={cfg.rango}
-              onChange={(e) => update('rango', e.target.value as Rank)}
-            >
-              {RANK_OPTIONS.map((rank) => (
-                <option key={rank} value={rank}>
-                  {rank}
-                </option>
-              ))}
-            </select>
           </div>
         </div>
 
