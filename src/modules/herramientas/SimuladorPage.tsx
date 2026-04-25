@@ -17,18 +17,18 @@ type Rank = 'Bronce' | 'Plata' | 'Oro' | 'Platino' | 'Diamante' | 'Doble Diamant
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-// Rank requirements: [personal VG, group VG]
+// Rank requirements: [personal VG, group VG] - based on VG total in organization
 const RANK_REQUIREMENTS: Record<Rank, [number, number]> = {
-  Bronce: [100, 500],
-  Plata: [200, 1000],
-  Oro: [300, 2500],
-  Platino: [400, 5000],
-  Diamante: [500, 10000],
-  'Doble Diamante': [750, 20000],
-  'Triple Diamante': [1000, 40000],
-  'Diamante Embajador': [1500, 75000],
-  'Doble Diamante Embajador': [2000, 150000],
-  'Triple Diamante Embajador': [3000, 300000],
+  Bronce: [0, 1000],
+  Plata: [0, 3000],
+  Oro: [0, 5000],
+  Platino: [0, 10000],
+  Diamante: [0, 25000],
+  'Doble Diamante': [0, 50000],
+  'Triple Diamante': [0, 100000],
+  'Diamante Embajador': [0, 250000],
+  'Doble Diamante Embajador': [0, 500000],
+  'Triple Diamante Embajador': [0, 1000000],
 }
 
 // Get rank options ordered from lowest to highest
@@ -60,6 +60,9 @@ function calculateAchievableRank(vgTotal: number): Rank {
 // Unilevel percentages by level index (0=level 1 through 8=level 9)
 const UNILEVEL_PCT = [0.06, 0.08, 0.10, 0.12, 0.05, 0.04, 0.03, 0.02, 0.02]
 
+// Bono Patrocinio by level: L1=25%, L2=15%, L3=5%
+const PATROCINIO_PCT = { L1: 0.25, L2: 0.15, L3: 0.05 }
+
 // Match bonus by rank: pct_n1 through pct_n5
 const MATCH_BONUS: Record<Rank, number[]> = {
   Bronce: [],
@@ -88,8 +91,19 @@ const INFINITO_PATROCINIO: Record<Rank, number> = {
   'Triple Diamante Embajador': 0.15,
 }
 
-// Infinito Uninivel (level 10+)
-const INFINITO_UNILEVEL_PCT = 0.02
+// Infinito Uninivel (level 10+) by rank
+const INFINITO_UNILEVEL: Record<Rank, number> = {
+  Bronce: 0,
+  Plata: 0,
+  Oro: 0,
+  Platino: 0.005,
+  Diamante: 0.0075,
+  'Doble Diamante': 0.01,
+  'Triple Diamante': 0.0125,
+  'Diamante Embajador': 0.015,
+  'Doble Diamante Embajador': 0.0175,
+  'Triple Diamante Embajador': 0.02,
+}
 
 // ─── Calculation logic ────────────────────────────────────────────────────────────────
 
@@ -133,9 +147,9 @@ function calcBonuses(cfg: SimConfig): BonoBreakdown {
   const l3Cv = levelCounts[2] || 0
 
   const patrocinio = {
-    level1: l1Cv * cvPorPersona * 0.20,
-    level2: l2Cv * cvPorPersona * 0.10,
-    level3: l3Cv * cvPorPersona * 0.05,
+    level1: l1Cv * cvPorPersona * PATROCINIO_PCT.L1,
+    level2: l2Cv * cvPorPersona * PATROCINIO_PCT.L2,
+    level3: l3Cv * cvPorPersona * PATROCINIO_PCT.L3,
     total: 0,
   }
   patrocinio.total = patrocinio.level1 + patrocinio.level2 + patrocinio.level3
@@ -171,8 +185,9 @@ function calcBonuses(cfg: SimConfig): BonoBreakdown {
 
   // ── Bono Infinito Uninivel (level 10+) ──
   // For simulation, treat nivel 10+ as nivel 10
+  const infUnilevelPct = INFINITO_UNILEVEL[rango] || 0
   const infinitoUnilevel = levelCounts.reduce((sum, count, idx) => {
-    if (idx >= 10) return sum + count * pvPorPersona * INFINITO_UNILEVEL_PCT
+    if (idx >= 10) return sum + count * pvPorPersona * infUnilevelPct
     return sum
   }, 0)
 
@@ -777,8 +792,8 @@ export function SimuladorPage() {
 
           {expandedSections.patrocinio && (
             <div className="space-y-1">
-              <DataRow label="Nivel 1 (20%)" value={bonuses.patrocinio.level1} />
-              <DataRow label="Nivel 2 (10%)" value={bonuses.patrocinio.level2} />
+              <DataRow label="Nivel 1 (25%)" value={bonuses.patrocinio.level1} />
+              <DataRow label="Nivel 2 (15%)" value={bonuses.patrocinio.level2} />
               <DataRow label="Nivel 3 (5%)" value={bonuses.patrocinio.level3} />
               <DataRow label="Total" value={bonuses.patrocinio.total} bold />
             </div>
