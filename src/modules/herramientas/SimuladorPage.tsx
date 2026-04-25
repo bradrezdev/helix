@@ -228,11 +228,11 @@ const DEFAULT_CONFIG: SimConfig = {
 export function SimuladorPage() {
   const { user, loading: authLoading } = useAuth()
   
-  // Direct query to avoid cache issues
-  const { data: profile, isLoading: profileLoading } = useQuery({
+  // Query ALWAYS at top level - cannot be conditional
+  const { data: isAdmin, isLoading: profileLoading } = useQuery({
     queryKey: ['admin-check', user?.id],
     queryFn: async () => {
-      if (!user?.id) return null
+      if (!user?.id) return false
       const { data } = await supabase
         .from('users')
         .select('is_admin')
@@ -252,7 +252,7 @@ export function SimuladorPage() {
     )
   }
   
-  if (!profile) {
+  if (!isAdmin) {
     return <AccessDenied />
   }
 

@@ -11,6 +11,11 @@ import {
   Wallet,
   Plus,
   Plane,
+  Calculator,
+} from 'lucide-react'
+  Wallet,
+  Plus,
+  Plane,
   ShieldCheck,
   Calculator,
   type LucideIcon,
@@ -39,6 +44,7 @@ const DROPDOWN_ITEMS = [
   { icon: Wallet, label: 'Transferencia interna', route: null },
   { icon: Plus, label: 'Nuevo registro', route: null },
   { icon: Plane, label: 'Viaje de Liderazgo', route: '/herramientas' },
+  { icon: Calculator, label: 'Simulador de Ganancias', route: '/simulador' },
 ]
 
 export function BottomNav() {
