@@ -45,6 +45,8 @@ export interface FullOrderDetail {
   paid_at: string | null
   payment_method: string | null
   shipping_data: unknown
+  shipping_cost: number
+  tax_amount: number
   total_amount: number
   pv: number
   cv: number
@@ -242,6 +244,8 @@ async function fetchOrderDetail(
     paid_at: raw.paid_at,
     payment_method: raw.payment_method,
     shipping_data: raw.shipping_data,
+    shipping_cost: Number(raw.shipping_cost ?? 0),
+    tax_amount: Number(raw.tax_amount ?? 0),
     total_amount: raw.total_amount,
     pv: raw.pv,
     cv: raw.cv,

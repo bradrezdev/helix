@@ -5,7 +5,7 @@ import ComisionesNivelPage from '../modules/comisiones/ComisionesNivelPage'
 import GananciasPage from '../modules/ganancias/GananciasPage'
 import BonoDetail from '../modules/ganancias/components/BonoDetail'
 import HistorialVolumenPage from '../modules/historial-volumen/HistorialVolumenPage'
-import InscripcionesPlaceholder from '../modules/inscripciones/InscripcionesPlaceholder'
+import HoldingTankPage from '../modules/inscripciones/HoldingTankPage'
 import { LoginPage } from '../modules/auth/LoginPage'
 import { RegisterPage } from '../modules/auth/RegisterPage'
 import { RegisterByLinkPage } from '../modules/auth/RegisterByLinkPage'
@@ -212,7 +212,7 @@ const historialVolumenRoute = createRoute({
 const inscripcionesRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/inscripciones',
-  component: () => <InscripcionesPlaceholder />,
+  component: () => <HoldingTankPage />,
 })
 
 const routeTree = rootRoute.addChildren([

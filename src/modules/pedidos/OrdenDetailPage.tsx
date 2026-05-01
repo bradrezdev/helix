@@ -114,7 +114,7 @@ export function OrdenDetailPage() {
 
   // ── Tax + totals calculation ──────────────────────────────────────────────────
   const subtotal = items.reduce((sum, item) => sum + item.total_amount, 0)
-  const shippingCost = (order as { shipping_cost?: number }).shipping_cost ?? 0
+  const shippingCost = order.shipping_cost
   const taxAmount = subtotal * taxRate
   const computedTotal = subtotal + shippingCost + taxAmount
 
@@ -233,6 +233,36 @@ export function OrdenDetailPage() {
 
         <hr className="border-[#EAECF0] my-4" />
 
+        {/* ── Envío section ────────────────────────────────────────────────── */}
+        <div className="space-y-3">
+          <p
+            className="font-semibold"
+            style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif', fontSize: '17px' }}
+          >
+            Envío
+          </p>
+          <div
+            className="bg-white rounded-[16px] shadow-sm p-4 space-y-2"
+            style={{ border: '1px solid #EAECF0' }}
+          >
+            {shippingLabel && shippingLabel !== '—' ? (
+              <>
+                <DetailRow label="Dirección" value={shippingLabel} />
+                {cediName && <DetailRow label="CEDI" value={cediName} />}
+              </>
+            ) : (
+              <p
+                className="text-sm text-center py-4"
+                style={{ color: 'rgba(6,42,99,0.40)', fontFamily: 'Poppins, sans-serif' }}
+              >
+                No hay información de envío
+              </p>
+            )}
+          </div>
+        </div>
+
+        <hr className="border-[#EAECF0] my-4" />
+
         {/* ── Detalles section ─────────────────────────────────────────────── */}
         <div className="space-y-3">
           <p
@@ -250,7 +280,6 @@ export function OrdenDetailPage() {
               <DetailRow label="Actualizado" value={formatDateTime(order.updated_at)} />
             )}
             <DetailRow label="Pago" value={formatPaymentMethod(order.payment_method)} />
-            <DetailRow label="Envío" value={shippingLabel} />
           </div>
         </div>
 
@@ -270,7 +299,7 @@ export function OrdenDetailPage() {
                 className="text-sm text-center py-4"
                 style={{ color: 'rgba(6,42,99,0.40)', fontFamily: 'Poppins, sans-serif' }}
               >
-                Sin productos
+                No hay artículos en esta orden
               </p>
             ) : (
               items.map((item) => (
