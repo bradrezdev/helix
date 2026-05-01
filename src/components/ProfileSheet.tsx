@@ -62,7 +62,12 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
 
   async function handleSignOut() {
     onClose()
-    await signOut()
+    try {
+      await signOut()
+    } catch {
+      // signOut failed (e.g. network error) — still navigate to login
+      // for 403 (invalid session), useAuth already handles it silently
+    }
     navigate({ to: '/login' })
   }
 
@@ -144,7 +149,7 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
                       style={{ fontFamily: 'Poppins, sans-serif' }}>Sponsor</span>
                     <span className="text-[14px] font-semibold text-[#062A63] max-w-[72px] truncate"
                       style={{ fontFamily: 'Poppins, sans-serif' }}>
-                      {profile?.sponsor_id ? '✓' : '—'}
+                      {profile?.sponsor_id ? 'X' : '—'}
                     </span>
                   </div>
                 </div>

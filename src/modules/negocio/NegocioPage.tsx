@@ -110,7 +110,7 @@ function Spinner() {
 function EmptyState({ message }: { message: string }) {
   return (
     <div className="flex flex-col items-center gap-2 py-10 text-sm text-gray-400 px-5">
-      <span className="text-2xl">📭</span>
+      <span className="text-2xl">[MAIL]</span>
       <p>{message}</p>
     </div>
   )

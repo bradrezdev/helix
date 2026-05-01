@@ -6,6 +6,8 @@ import { useUnivelTree, useSponsorTree, useNetworkStats } from './useNetwork'
 import type { NetworkNode, TreeType } from './NetworkNode'
 import { cn } from '../../lib/utils'
 import { useAuth } from '../../hooks/useAuth'
+import { useProfile } from '../../hooks/useProfile'
+import { supabase } from '../../lib/supabase'
 
 const RANK_IMAGES: Record<string, string> = {
   Bronce: '/rangos/bronce.png',
@@ -33,12 +35,19 @@ const InfoRow = ({ label, value }: { label: string; value: string }) => (
 export default function NetworkPage() {
   const { user, loading: authLoading } = useAuth()
   const userId = user?.id ?? ''
+  const { data: profile } = useProfile(userId)
+  const isAdmin = profile?.is_admin === true
 
   const [activeTree, setActiveTree] = useState<TreeType>('unilevel')
   const [selectedNode, setSelectedNode] = useState<NetworkNode | null>(null)
   const [rootUserId, setRootUserId] = useState<string | null>(null)
   const [bottomSheetNode, setBottomSheetNode] = useState<NetworkNode | null>(null)
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  
+  // Admin search state
+  const [adminSearchQuery, setAdminSearchQuery] = useState('')
+  const [adminSearchResults, setAdminSearchResults] = useState<any[]>([])
+  const [adminSearching, setAdminSearching] = useState(false)
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768)
@@ -47,6 +56,34 @@ export default function NetworkPage() {
   }, [])
 
   const effectiveUserId = rootUserId ?? userId
+
+  // Admin search handler
+  async function handleAdminSearch(query: string) {
+    setAdminSearchQuery(query)
+    if (query.length < 2) { setAdminSearchResults([]); return }
+    setAdminSearching(true)
+    try {
+      const isNumeric = /^\d+$/.test(query)
+      let q = supabase.from('users').select('id, user_id, name, email').limit(5)
+      if (isNumeric) q = q.eq('user_id', Number(query))
+      else q = q.or(`name.ilike.%${query}%,email.ilike.%${query}%`)
+      const { data } = await q
+      setAdminSearchResults((data ?? []) as any[])
+    } finally {
+      setAdminSearching(false)
+    }
+  }
+
+  function handleSelectAdminUser(u: any) {
+    setRootUserId(u.id) // Set searched user as org chart root
+    setAdminSearchResults([])
+    setAdminSearchQuery(`${u.name} (#${u.user_id})`)
+  }
+
+  function clearAdminSearch() {
+    setRootUserId(null) // Reset to own network
+    setAdminSearchQuery('')
+  }
 
   const univelQuery = useUnivelTree(effectiveUserId, 3)
   const sponsorQuery = useSponsorTree(effectiveUserId, 3)
@@ -78,7 +115,7 @@ export default function NetworkPage() {
   if (!authLoading && !userId) {
     return (
       <div className="flex flex-col items-center justify-center bg-[#F9FAFB]" style={{ height: '100dvh' }}>
-        <div className="text-5xl mb-4">🔒</div>
+        <div className="text-5xl mb-4">[LOCK]</div>
         <h2 className="text-lg font-semibold text-[#062A63]">Sesión no activa</h2>
         <p className="text-sm text-gray-400 mt-1 text-center max-w-xs">
           Inicia sesión para ver tu red de distribuidores.
@@ -95,7 +132,65 @@ export default function NetworkPage() {
           <h1 className="text-xl font-semibold text-[#062A63] tracking-tight">Mi Red</h1>
           <p className="text-xs text-gray-400 mt-0.5">Visualización de tu estructura MLM</p>
         </div>
+        {isAdmin && (
+          <div className="relative">
+            <button
+              onClick={() => setAdminSearchQuery(adminSearchQuery ? '' : 'admin')}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#062A63] text-white"
+            >
+              [SEARCH]Admin
+            </button>
+          </div>
+        )}
       </header>
+      
+      {/* Admin Search Bar - only shown to admins */}
+      {isAdmin && (
+        <div className="px-5 pb-2">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Buscar usuario por nombre, email o ID..."
+              value={adminSearchQuery}
+              onChange={(e) => handleAdminSearch(e.target.value)}
+              className="w-full rounded-[18px] border border-[#EAECF0] px-4 py-2.5 text-sm bg-white"
+            />
+            {adminSearchQuery && (
+              <button
+                onClick={clearAdminSearch}
+                className="absolute right-3 top-3 text-xs text-gray-400 hover:text-gray-600"
+              >
+                X
+              </button>
+            )}
+            {adminSearchResults.length > 0 && !rootUserId && (
+              <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-[#EAECF0] rounded-[18px] shadow-lg max-h-40 overflow-y-auto">
+                {adminSearchResults.map((u: any) => (
+                  <button
+                    key={u.id}
+                    onClick={() => handleSelectAdminUser(u)}
+                    className="w-full px-4 py-2.5 text-left hover:bg-[#F2F4F9] flex items-center gap-3"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-[#062A63] flex items-center justify-center text-xs font-bold text-white">
+                      {u.name?.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{u.name}</p>
+                      <p className="text-xs text-gray-500">#{u.user_id} — {u.email}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            {adminSearching && (
+              <p className="text-xs text-gray-400 mt-1">Buscando...</p>
+            )}
+          </div>
+          {rootUserId && adminSearchQuery && (
+            <p className="text-xs text-blue-600 mt-1">Mostrando red de: <strong>{adminSearchQuery}</strong></p>
+          )}
+        </div>
+      )}
 
       {/* Stats Bar */}
       <NetworkStatsBar
@@ -132,7 +227,7 @@ export default function NetworkPage() {
 
         {isError && (
           <div className="absolute inset-0 flex items-center justify-center flex-col gap-3">
-            <div className="text-4xl">⚠️</div>
+            <div className="text-4xl">[WARN]</div>
             <p className="text-sm text-gray-400 text-center max-w-xs">
               No se pudo cargar el árbol. <br />
               Verifica tu conexión o que las RPCs estén disponibles.
@@ -142,7 +237,7 @@ export default function NetworkPage() {
 
         {!isLoading && !isError && currentNodes.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center flex-col gap-3">
-            <div className="text-4xl">🌱</div>
+            <div className="text-4xl">[SEED]</div>
             <p className="text-sm text-gray-400 text-center max-w-xs">
               Tu red está vacía por el momento.<br />
               Comienza a patrocinar distribuidores.
@@ -172,7 +267,7 @@ export default function NetworkPage() {
             <button
               onClick={() => setBottomSheetNode(null)}
               className="absolute top-3 right-4 text-gray-400"
-            >✕</button>
+            >X</button>
 
             {bottomSheetNode && (
               <div className="px-5 pb-6 space-y-3 max-h-[60vh] overflow-y-auto">

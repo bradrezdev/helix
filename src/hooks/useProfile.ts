@@ -8,11 +8,13 @@ export interface UserProfile {
   apellidos: string | null
   email: string
   rank: string
+  membership: string | null
   sponsor_id: string | null
   enrollment_date: string
   created_at: string
   link_referido: string | null
   is_admin: boolean | null
+  country: string
 }
 
 export interface SponsorProfile {
@@ -30,11 +32,14 @@ export function useProfile(userId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('users')
-        .select('id, user_id, name, apellidos, email, rank, sponsor_id, enrollment_date, created_at, link_referido, is_admin')
+        .select('id, user_id, name, apellidos, email, rank, membership, sponsor_id, enrollment_date, created_at, link_referido, is_admin, country')
         .eq('id', userId)
-        .single()
+        .maybeSingle()
+      // maybeSingle() returns null instead of 406 when no row found
       if (error) throw error
-      return data as UserProfile
+      if (!data) return null
+      const raw = data as Omit<UserProfile, 'country'> & { country: string | null }
+      return { ...raw, country: raw.country ?? 'MX' } as UserProfile
     },
     enabled: !!userId,
     staleTime: 5 * 60 * 1000,
@@ -56,9 +61,9 @@ export function useSponsor(sponsorId: string | null | undefined) {
         .from('users')
         .select('id, user_id, name, apellidos, email, rank')
         .eq('id', sponsorId!)
-        .single()
+        .maybeSingle()
       if (error) throw error
-      return data as SponsorProfile
+      return data as SponsorProfile | null
     },
     enabled: !!sponsorId,
     staleTime: 5 * 60 * 1000,

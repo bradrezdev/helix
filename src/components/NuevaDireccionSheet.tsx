@@ -1,17 +1,9 @@
 import { useState, useEffect } from 'react'
 import { X, MapPin, Check } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
-import { saveDireccion, type NuevaDireccionData } from '../hooks/useDirecciones'
-
-const ESTADOS_MEXICO = [
-  'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche',
-  'Chiapas', 'Chihuahua', 'Ciudad de México', 'Coahuila', 'Colima',
-  'Durango', 'Estado de México', 'Guanajuato', 'Guerrero', 'Hidalgo',
-  'Jalisco', 'Michoacán', 'Morelos', 'Nayarit', 'Nuevo León', 'Oaxaca',
-  'Puebla', 'Querétaro', 'Quintana Roo', 'San Luis Potosí', 'Sinaloa',
-  'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán',
-  'Zacatecas',
-]
+import { useProfile } from '../hooks/useProfile'
+import { saveDireccion } from '../hooks/useDirecciones'
+import { ShippingAddressForm, type ShippingAddress } from './ShippingAddressForm'
 
 interface Props {
   open: boolean
@@ -19,40 +11,43 @@ interface Props {
   onSaved: () => void
 }
 
-const EMPTY: NuevaDireccionData = {
-  nombre_completo: '',
-  calle_numero: '',
-  colonia: '',
-  municipio: '',
-  estado: '',
-  codigo_postal: '',
+function emptyAddress(defaultCountry: string): ShippingAddress {
+  return {
+    country: defaultCountry,
+    full_name: '',
+    street: '',
+    colonia: '',
+    city: '',
+    state: '',
+    zip: '',
+    phone: '',
+  }
 }
 
 export function NuevaDireccionSheet({ open, onClose, onSaved }: Props) {
   const { user } = useAuth()
-  const [form, setForm] = useState<NuevaDireccionData>(EMPTY)
+  const { profile } = useProfile(user?.id ?? '')
+  const defaultCountry = profile?.country ?? 'MX'
+
+  const [form, setForm] = useState<ShippingAddress>(() => emptyAddress(defaultCountry))
   const [makeDefault, setMakeDefault] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (open) {
-      setForm(EMPTY)
+      setForm(emptyAddress(defaultCountry))
       setMakeDefault(true)
       setError(null)
     }
     document.body.style.overflow = open ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
-  }, [open])
-
-  function set(field: keyof NuevaDireccionData, value: string) {
-    setForm((prev) => ({ ...prev, [field]: value }))
-  }
+  }, [open, defaultCountry])
 
   async function handleSave() {
     if (!user) return
-    const required: (keyof NuevaDireccionData)[] = [
-      'nombre_completo', 'calle_numero', 'colonia', 'municipio', 'estado', 'codigo_postal',
+    const required: (keyof ShippingAddress)[] = [
+      'full_name', 'street', 'city', 'state', 'zip', 'phone',
     ]
     const missing = required.filter((f) => !(form[f] ?? '').trim())
     if (missing.length > 0) {
@@ -62,7 +57,16 @@ export function NuevaDireccionSheet({ open, onClose, onSaved }: Props) {
     setSaving(true)
     setError(null)
     try {
-      await saveDireccion(user.id, form, makeDefault)
+      await saveDireccion(user.id, {
+        nombre_completo: form.full_name,
+        calle_numero: form.street,
+        colonia: form.colonia ?? '',
+        municipio: form.city,
+        estado: form.state,
+        codigo_postal: form.zip,
+        pais: form.country,
+        phone: form.phone,
+      }, makeDefault)
       onSaved()
       onClose()
     } catch {
@@ -119,63 +123,10 @@ export function NuevaDireccionSheet({ open, onClose, onSaved }: Props) {
 
         {/* Scrollable form */}
         <div className="flex-1 overflow-y-auto px-5 pb-6 flex flex-col gap-3">
-          <Field
-            label="Nombre completo"
-            placeholder="Ej. María García López"
-            value={form.nombre_completo}
-            onChange={(v) => set('nombre_completo', v)}
-          />
-          <Field
-            label="Calle y número"
-            placeholder="Ej. Insurgentes Sur 1234"
-            value={form.calle_numero}
-            onChange={(v) => set('calle_numero', v)}
-          />
-          <Field
-            label="Colonia"
-            placeholder="Ej. Del Valle"
-            value={form.colonia}
-            onChange={(v) => set('colonia', v)}
-          />
-          <Field
-            label="Municipio / Alcaldía"
-            placeholder="Ej. Benito Juárez"
-            value={form.municipio}
-            onChange={(v) => set('municipio', v)}
-          />
-
-          {/* Estado dropdown */}
-          <div className="flex flex-col gap-1">
-            <label
-              className="text-xs font-semibold uppercase tracking-wide"
-              style={{ color: 'rgba(56,58,63,0.6)', fontFamily: 'Poppins, sans-serif' }}
-            >
-              Estado
-            </label>
-            <select
-              value={form.estado}
-              onChange={(e) => set('estado', e.target.value)}
-              className="w-full px-4 py-3 rounded-[18px] border border-[#EAECF0] text-sm appearance-none"
-              style={{
-                color: form.estado ? '#383A3F' : '#9CA3AF',
-                fontFamily: 'Poppins, sans-serif',
-                background: '#fff',
-              }}
-            >
-              <option value="" disabled>Selecciona un estado</option>
-              {ESTADOS_MEXICO.map((e) => (
-                <option key={e} value={e}>{e}</option>
-              ))}
-            </select>
-          </div>
-
-          <Field
-            label="Código postal"
-            placeholder="Ej. 03100"
-            value={form.codigo_postal}
-            onChange={(v) => set('codigo_postal', v)}
-            inputMode="numeric"
-            maxLength={5}
+          <ShippingAddressForm
+            value={form}
+            onChange={setForm}
+            defaultCountry={defaultCountry}
           />
 
           {/* Make default checkbox */}
@@ -238,37 +189,5 @@ export function NuevaDireccionSheet({ open, onClose, onSaved }: Props) {
         }
       `}</style>
     </>
-  )
-}
-
-interface FieldProps {
-  label: string
-  placeholder: string
-  value: string
-  onChange: (v: string) => void
-  inputMode?: React.InputHTMLAttributes<HTMLInputElement>['inputMode']
-  maxLength?: number
-}
-
-function Field({ label, placeholder, value, onChange, inputMode, maxLength }: FieldProps) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label
-        className="text-xs font-semibold uppercase tracking-wide"
-        style={{ color: 'rgba(56,58,63,0.6)', fontFamily: 'Poppins, sans-serif' }}
-      >
-        {label}
-      </label>
-      <input
-        type="text"
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        inputMode={inputMode}
-        maxLength={maxLength}
-        className="w-full px-4 py-3 rounded-[18px] border border-[#EAECF0] text-sm outline-none focus:border-[#062A63] transition-colors"
-        style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}
-      />
-    </div>
   )
 }

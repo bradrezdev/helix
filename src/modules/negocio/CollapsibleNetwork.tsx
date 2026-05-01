@@ -151,7 +151,7 @@ export function CollapsibleNetwork({ userId }: CollapsibleNetworkProps) {
 
           {!isLoading && currentNodes.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full gap-3">
-              <div className="text-4xl">🌱</div>
+              <div className="text-4xl">[SEED]</div>
               <p className="text-sm text-gray-400 text-center max-w-xs">
                 Tu red está vacía por el momento.
               </p>
@@ -178,7 +178,7 @@ export function CollapsibleNetwork({ userId }: CollapsibleNetworkProps) {
               <button
                 onClick={() => setBottomSheetNode(null)}
                 className="absolute top-3 right-4 text-gray-400"
-              >✕</button>
+              >X</button>
 
               {bottomSheetNode && (
                 <div className="px-5 pb-6 space-y-3 max-h-[60vh] overflow-y-auto">

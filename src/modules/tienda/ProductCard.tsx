@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ShoppingBag, Plus } from 'lucide-react'
+import { toast } from 'sonner'
 import type { Product } from '../../hooks/useProducts'
 import { useCart } from '../../store/cartStore'
 
@@ -79,7 +80,14 @@ export function ProductCard({ product, onOpen }: Props) {
         {/* +/- or add */}
         {qty === 0 ? (
           <button
-            onClick={() => add(product)}
+            onClick={() => {
+              const result = add(product)
+              if (!result.ok) {
+                if (result.reason === 'kit_limit') toast.error('Solo puedes agregar 1 kit al carrito')
+                else if (result.reason === 'no_stock') toast.error('Producto sin stock disponible')
+                else toast.error('Has alcanzado el máximo disponible en stock')
+              }
+            }}
             className="w-full mt-1 py-2 rounded-full flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
             style={{ background: '#062A63' }}
           >
@@ -107,7 +115,10 @@ export function ProductCard({ product, onOpen }: Props) {
               {qty}
             </span>
             <button
-              onClick={() => increment(product.code)}
+              onClick={() => {
+                const result = increment(product.code)
+                if (!result.ok) toast.error('Has alcanzado el máximo disponible en stock')
+              }}
               className="w-8 h-8 rounded-full flex items-center justify-center text-lg font-bold active:scale-95"
               style={{ background: '#062A63', color: '#fff' }}
             >

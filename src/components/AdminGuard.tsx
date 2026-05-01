@@ -35,7 +35,7 @@ export function AdminGuard({ children }: AdminGuardProps) {
           className="rounded-[32px] bg-white shadow-[0_2px_12px_rgba(6,42,99,0.07)] p-8 max-w-sm w-full text-center"
           style={{ border: '1px solid #EAECF0' }}
         >
-          <div className="text-4xl mb-4">⚠️</div>
+          <div className="text-4xl mb-4">[WARN]</div>
           <h2
             className="text-lg font-semibold mb-2"
             style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}
@@ -78,7 +78,7 @@ export function AdminGuard({ children }: AdminGuardProps) {
           className="rounded-[32px] bg-white shadow-[0_2px_12px_rgba(6,42,99,0.07)] p-8 max-w-sm w-full text-center"
           style={{ border: '1px solid #EAECF0' }}
         >
-          <div className="text-4xl mb-4">🔒</div>
+          <div className="text-4xl mb-4">[LOCK]</div>
           <h2
             className="text-lg font-semibold mb-2"
             style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}

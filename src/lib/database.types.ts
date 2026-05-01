@@ -653,6 +653,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      },
+      periodos: {
+        Row: {
+          id: string
+          name: string
+          period_month: number
+          period_year: number
+          start_date: string
+          end_date: string
+          status: Database["public"]["Enums"]["periodo_status"]
+          closed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          period_month: number
+          period_year: number
+          start_date: string
+          end_date: string
+          status?: Database["public"]["Enums"]["periodo_status"]
+          closed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          period_month?: number
+          period_year?: number
+          start_date?: string
+          end_date?: string
+          status?: Database["public"]["Enums"]["periodo_status"]
+          closed_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
@@ -736,6 +772,30 @@ export type Database = {
         Returns: Database["public"]["Enums"]["rank_type"]
       }
       get_my_sponsor_id: { Args: never; Returns: string }
+      get_network_orders: {
+        Args: {
+          p_root_id?: string
+          p_page?: number
+          p_page_size?: number
+          p_status?: string
+          p_date_from?: string
+          p_date_to?: string
+        }
+        Returns: {
+          id: string
+          order_code: string
+          buyer_user_id: number
+          buyer_name: string
+          buyer_apellidos: string | null
+          tree_level: number
+          pv: number
+          cv: number
+          total_amount: number
+          status: string
+          created_at: string
+          total_count: number
+        }[]
+      }
       get_network_stats: {
         Args: { p_user_id: string }
         Returns: {
@@ -811,12 +871,82 @@ export type Database = {
         Returns: undefined
       }
       text2ltree: { Args: { "": string }; Returns: unknown }
+      get_comisiones_nivel: {
+        Args: { p_user_id?: string; p_month?: number; p_year?: number }
+        Returns: {
+          level: number
+          total_socios: number
+          total_pv: number
+          total_cv: number
+          total_amount: number
+        }[]
+      }
+      get_periodos_volumen: {
+        Args: { p_user_id?: string }
+        Returns: {
+          period_id: string
+          period_name: string
+          period_month: number
+          period_year: number
+          start_date: string
+          end_date: string
+          status: string
+          personal_pv: number
+          personal_cv: number
+          group_vg: number
+        }[]
+      }
+      get_socios_nivel: {
+        Args: {
+          p_user_id?: string
+          p_level?: number
+          p_month?: number
+          p_year?: number
+        }
+        Returns: {
+          source_user_id: string
+          user_id: number
+          name: string
+          apellidos: string | null
+          pv: number
+          cv: number
+          amount: number
+        }[]
+      }
+      get_comisiones_nivel_all: {
+        Args: { p_user_id?: string; p_month?: number; p_year?: number }
+        Returns: {
+          level: number
+          total_socios: number
+          total_pv: number
+          total_cv: number
+          total_amount: number
+        }[]
+      }
+      get_socios_nivel_all: {
+        Args: {
+          p_user_id?: string
+          p_level?: number
+          p_month?: number
+          p_year?: number
+        }
+        Returns: {
+          source_user_id: string
+          user_id: number
+          name: string
+          apellidos: string | null
+          pv: number
+          cv: number
+          amount: number
+        }[]
+      }
     }
     Enums: {
       country_type: "USD" | "MXN" | "COP" | "EUR"
       kit_type: "basico" | "intermedio" | "superior"
       membership_type: "socio" | "cliente_preferente"
       order_status: "pending" | "paid" | "cancelled"
+      periodo_status: "active" | "closed"
       price_type: "public" | "socio" | "promotor"
       rank_type:
         | "Socio"
@@ -961,6 +1091,7 @@ export const Constants = {
       kit_type: ["basico", "intermedio", "superior"],
       membership_type: ["socio", "cliente_preferente"],
       order_status: ["pending", "paid", "cancelled"],
+      periodo_status: ["active", "closed"],
       price_type: ["public", "socio", "promotor"],
       rank_type: [
         "Socio",

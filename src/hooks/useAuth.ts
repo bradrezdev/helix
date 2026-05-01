@@ -42,7 +42,9 @@ export function useAuth(): AuthState {
 
   async function signOut() {
     const { error } = await supabase.auth.signOut()
-    if (error) throw error
+    // 403 = token already invalid (expired session or deleted user)
+    // Still clear local session — sign out is successful from user's perspective
+    if (error && error.status !== 403) throw error
   }
 
   return { user, session, loading, signIn, signOut }

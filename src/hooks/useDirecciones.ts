@@ -12,6 +12,7 @@ export interface Direccion {
   estado: string
   codigo_postal: string
   pais: string
+  phone: string | null
   is_default: boolean
   created_at: string | null
   updated_at: string | null
@@ -25,6 +26,7 @@ export interface NuevaDireccionData {
   estado: string
   codigo_postal: string
   pais?: string
+  phone?: string
 }
 
 export function useDirecciones() {

@@ -1,10 +1,38 @@
+import { useEffect, useRef, useState } from 'react'
 import { ShoppingCart, X, Plus, Minus, Trash2, ArrowRight } from 'lucide-react'
+import { toast } from 'sonner'
 import { useCart } from '../../store/cartStore'
 import { useNavigate } from '@tanstack/react-router'
+import { useStoreProducts } from '../../hooks/useStoreProducts'
+import { getProductPrice } from '../../utils/pricing'
+import { formatAmount } from '../../lib/formatters'
 
-export function CartSheet({ onClose }: { onClose: () => void }) {
-  const { items, increment, decrement, total, totalPV, count } = useCart()
+export function CartSheet({
+  onClose,
+  country = 'MXN',
+  membership = 'socio',
+}: {
+  onClose: () => void
+  country?: string
+  membership?: string
+}) {
+  const { items, increment, decrement, total, totalPV, count, validateCart, isKitMode } = useCart()
   const navigate = useNavigate()
+  const { data: freshProducts = [] } = useStoreProducts()
+  const [removedToast, setRemovedToast] = useState(false)
+  const validatedRef = useRef(false)
+
+  // Validate cart on open (once per mount)
+  useEffect(() => {
+    if (!validatedRef.current && freshProducts.length > 0) {
+      validatedRef.current = true
+      const { removedCodes } = validateCart(freshProducts)
+      if (removedCodes.length > 0) {
+        setRemovedToast(true)
+        setTimeout(() => setRemovedToast(false), 4000)
+      }
+    }
+  }, [freshProducts, validateCart])
 
   if (items.length === 0) {
     return (
@@ -61,72 +89,116 @@ export function CartSheet({ onClose }: { onClose: () => void }) {
           <div className="w-10 h-1 rounded-full" style={{ background: '#EAECF0' }} />
         </div>
         <div className="flex items-center justify-between px-5 py-3">
-          <h3
-            className="font-semibold text-base"
-            style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}
-          >
-            Carrito · {count()} {count() === 1 ? 'producto' : 'productos'}
-          </h3>
+          <div>
+            <h3
+              className="font-semibold text-base"
+              style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}
+            >
+              Carrito · {count()} {count() === 1 ? 'producto' : 'productos'}
+            </h3>
+            {/* Kit mode chip */}
+            {isKitMode && (
+              <span
+                className="text-[10px] font-semibold px-2 py-0.5 rounded-full inline-block mt-0.5"
+                style={{ background: 'rgba(12,188,229,0.15)', color: '#0CBCE5', fontFamily: 'Poppins, sans-serif' }}
+              >
+                Modo Kit activo
+              </span>
+            )}
+          </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full" style={{ background: '#F2F4F9' }}>
             <X size={16} style={{ color: '#9CA3AF' }} />
           </button>
         </div>
 
+        {/* Removed items toast */}
+        {removedToast && (
+          <div
+            className="mx-5 mb-2 px-4 py-2 rounded-2xl text-xs"
+            style={{
+              background: 'rgba(245,158,11,0.10)',
+              color: '#D97706',
+              fontFamily: 'Poppins, sans-serif',
+              border: '1px solid rgba(245,158,11,0.2)',
+            }}
+          >
+            Algunos productos fueron actualizados
+          </div>
+        )}
+
         {/* Items */}
         <div className="flex-1 overflow-y-auto px-5 pb-2 flex flex-col gap-2">
-          {items.map(({ product, quantity }) => (
-            <div
-              key={product.code}
-              className="flex items-center gap-3 p-3 rounded-2xl"
-              style={{ background: '#F2F4F9' }}
-            >
-              {/* Mini image */}
+          {items.map(({ product, quantity }) => {
+            const isKitProduct = isKitMode && product.is_kit
+            const isAddon = isKitMode && !product.is_kit
+
+            return (
               <div
-                className="rounded-xl overflow-hidden shrink-0"
-                style={{ width: 52, height: 52, background: '#E5E7EB' }}
+                key={product.code}
+                className={`flex items-center gap-3 p-3 rounded-2xl${isAddon ? ' ml-4' : ''}`}
+                style={{ background: '#F2F4F9' }}
               >
-                {product.image_url && (
-                  <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
-                )}
-              </div>
-
-              {/* Name + price */}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
-                  {product.name}
-                </p>
-                <p className="text-xs" style={{ color: '#6B7280', fontFamily: 'Poppins, sans-serif' }}>
-                  ${product.price_socio_mxn.toLocaleString('es-MX', { minimumFractionDigits: 2 })} c/u
-                </p>
-              </div>
-
-              {/* Qty controls */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => decrement(product.code)}
-                  className="w-7 h-7 rounded-full flex items-center justify-center"
-                  style={{ background: '#fff' }}
+                {/* Mini image */}
+                <div
+                  className="rounded-xl overflow-hidden shrink-0"
+                  style={{ width: isAddon ? 44 : 52, height: isAddon ? 44 : 52, background: '#E5E7EB' }}
                 >
-                  {quantity === 1
-                    ? <Trash2 size={13} style={{ color: '#EF4444' }} />
-                    : <Minus size={13} style={{ color: '#062A63' }} />}
-                </button>
-                <span className="text-sm font-bold w-4 text-center" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
-                  {quantity}
-                </span>
-                <button
-                  onClick={() => increment(product.code)}
-                  className="w-7 h-7 rounded-full flex items-center justify-center"
-                  style={{ background: '#062A63' }}
-                >
-                  <Plus size={13} color="#fff" />
-                </button>
+                  {product.image_url && (
+                    <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                  )}
+                </div>
+
+                {/* Name + price */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className={`font-semibold truncate${isAddon ? ' text-xs' : ' text-sm'}`} style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
+                      {product.name}
+                    </p>
+                    {isKitProduct && (
+                      <span
+                        className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0"
+                        style={{ background: 'rgba(12,188,229,0.15)', color: '#0CBCE5', fontFamily: 'Poppins, sans-serif' }}
+                      >
+                        Kit
+                      </span>
+                    )}
+                  </div>
+                  <p className={`${isAddon ? 'text-[10px]' : 'text-xs'}`} style={{ color: '#6B7280', fontFamily: 'Poppins, sans-serif' }}>
+                    {formatAmount(getProductPrice(product, country, membership), country)} c/u
+                  </p>
+                </div>
+
+                {/* Qty controls */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => decrement(product.code)}
+                    className="w-7 h-7 rounded-full flex items-center justify-center"
+                    style={{ background: '#fff' }}
+                  >
+                    {quantity === 1
+                      ? <Trash2 size={13} style={{ color: '#EF4444' }} />
+                      : <Minus size={13} style={{ color: '#062A63' }} />}
+                  </button>
+                  <span className="text-sm font-bold w-4 text-center" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
+                    {quantity}
+                  </span>
+                  <button
+                    onClick={() => {
+                      const result = increment(product.code)
+                      if (!result.ok) toast.error('Has alcanzado el máximo disponible en stock')
+                    }}
+                    className="w-7 h-7 rounded-full flex items-center justify-center"
+                    style={{ background: '#062A63' }}
+                  >
+                    <Plus size={13} color="#fff" />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
-        {/* Footer — always visible, never clipped */}
+        {/* Footer */}
         <div
           className="shrink-0 px-5 pt-3"
           style={{
@@ -139,7 +211,7 @@ export function CartSheet({ onClose }: { onClose: () => void }) {
               Total · {totalPV().toFixed(0)} PV
             </span>
             <span className="text-lg font-bold" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
-              ${total().toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN
+              {formatAmount(total(), country)}
             </span>
           </div>
           <button

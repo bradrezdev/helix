@@ -1,6 +1,11 @@
 import { createRootRoute, createRoute, createRouter, Outlet, redirect } from '@tanstack/react-router'
 import { supabase } from './supabase'
-import { Layout } from '../components/Layout'
+import DashboardLayout from '../components/DashboardLayout'
+import ComisionesNivelPage from '../modules/comisiones/ComisionesNivelPage'
+import GananciasPage from '../modules/ganancias/GananciasPage'
+import BonoDetail from '../modules/ganancias/components/BonoDetail'
+import HistorialVolumenPage from '../modules/historial-volumen/HistorialVolumenPage'
+import InscripcionesPlaceholder from '../modules/inscripciones/InscripcionesPlaceholder'
 import { LoginPage } from '../modules/auth/LoginPage'
 import { RegisterPage } from '../modules/auth/RegisterPage'
 import { RegisterByLinkPage } from '../modules/auth/RegisterByLinkPage'
@@ -11,9 +16,13 @@ import { PedidosPage } from '../modules/pedidos/PedidosPage'
 import { TiendaPage } from '../modules/tienda/TiendaPage'
 import { CheckoutPage } from '../modules/tienda/CheckoutPage'
 import { AdminPage } from '../modules/admin/AdminPage'
+import { AdminOrdersPage } from '../modules/admin/AdminOrdersPage'
 import { AdminGuard } from '../components/AdminGuard'
 import { OrdenDetailPage } from '../modules/pedidos/OrdenDetailPage'
 import { SimuladorPage } from '../modules/herramientas/SimuladorPage'
+import { HerramientasPage } from '../modules/herramientas/HerramientasPage'
+import { RetirosPage } from '../modules/retiros/RetirosPage'
+import { BilleteraPage } from '../modules/billetera/BilleteraPage'
 
 // Helper: check auth
 async function requireAuth() {
@@ -70,9 +79,9 @@ const authenticatedRoute = createRoute({
   id: 'authenticated',
   beforeLoad: requireAuth,
   component: () => (
-    <Layout>
+    <DashboardLayout>
       <Outlet />
-    </Layout>
+    </DashboardLayout>
   ),
 })
 
@@ -130,6 +139,16 @@ const adminRoute = createRoute({
   ),
 })
 
+const adminOrdenesRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/admin/ordenes',
+  component: () => (
+    <AdminGuard>
+      <AdminOrdersPage />
+    </AdminGuard>
+  ),
+})
+
 const pedidosRedirectRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/pedidos',
@@ -140,6 +159,60 @@ const simuladorRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/simulador',
   component: SimuladorPage,
+})
+
+const viajeRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/viaje',
+  component: HerramientasPage,
+})
+
+const herramientasRedirectRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/herramientas',
+  beforeLoad: () => { throw redirect({ to: '/viaje' }) },
+})
+
+const retirosRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/retiros',
+  component: RetirosPage,
+})
+
+const billeteraRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/billetera',
+  component: BilleteraPage,
+})
+
+const comisionesRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/comisiones',
+  component: () => <ComisionesNivelPage />,
+})
+
+const gananciasRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/ganancias',
+  component: () => <GananciasPage />,
+})
+
+const gananciasBonoRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/ganancias/$bonoType',
+  component: () => <BonoDetail />,
+})
+
+const historialVolumenRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/historial-volumen',
+  component: () => <HistorialVolumenPage />,
+})
+
+const inscripcionesRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/inscripciones',
+  component: () => <InscripcionesPlaceholder />,
 })
 
 const routeTree = rootRoute.addChildren([
@@ -155,8 +228,18 @@ const routeTree = rootRoute.addChildren([
     checkoutRoute,
     registerRoute,
     adminRoute,
+    adminOrdenesRoute,
     pedidosRedirectRoute,
     simuladorRoute,
+    viajeRoute,
+    herramientasRedirectRoute,
+    retirosRoute,
+    billeteraRoute,
+    comisionesRoute,
+    gananciasRoute,
+    gananciasBonoRoute,
+    historialVolumenRoute,
+    inscripcionesRoute,
   ]),
 ])
 
