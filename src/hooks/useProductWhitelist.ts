@@ -36,6 +36,7 @@ export function useProductWhitelist(userId: string | undefined, user: UserProfil
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['products-whitelist', userId] })
     qc.invalidateQueries({ queryKey: ['user-has-kit', userId] })
+    qc.invalidateQueries({ queryKey: ['kit-eligibility', userId] })
   }
 
   return {

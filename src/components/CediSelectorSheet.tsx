@@ -32,14 +32,14 @@ export function CediSelectorSheet({ open, onClose, onSelect }: Props) {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[10000]"
+        className="fixed inset-0 z-[1000]"
         style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(2px)' }}
         onClick={onClose}
       />
 
       {/* Sheet */}
       <div
-        className="fixed left-0 right-0 bottom-0 z-[10001] flex flex-col"
+        className="fixed left-0 right-0 bottom-0 z-[1001] flex flex-col"
         style={{
           background: '#ffffff',
           borderRadius: '32px 32px 0 0',

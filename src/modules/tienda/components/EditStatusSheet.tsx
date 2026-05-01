@@ -52,14 +52,14 @@ export function EditStatusSheet({ open, onClose, selectedCodes }: EditStatusShee
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[2000]"
+        className="fixed inset-0 z-[1000]"
         style={{ background: 'rgba(6,42,99,0.22)', backdropFilter: 'blur(2px)' }}
         onClick={onClose}
       />
 
       {/* Sheet */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-[2001] flex flex-col"
+        className="fixed bottom-0 left-0 right-0 z-[1001] flex flex-col"
         style={{
           background: '#fff',
           borderRadius: '32px 32px 0 0',

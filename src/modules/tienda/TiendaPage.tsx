@@ -307,14 +307,15 @@ export function TiendaPage() {
 
   // Product whitelist — invalidate cache after purchase
   const { invalidateCache } = useProductWhitelist(user?.id, profile)
+  const purchaseCompleted = useCart((s) => s.purchaseCompleted)
 
   // Invalidate product cache when returning from successful purchase
   useEffect(() => {
-    if (useCart.getState().purchaseCompleted) {
+    if (purchaseCompleted) {
       invalidateCache()
       useCart.getState().resetPurchaseFlag()
     }
-  }, [invalidateCache])
+  }, [purchaseCompleted, invalidateCache])
 
   function handleProductSelect(product: Product) {
     if (product.is_kit) {

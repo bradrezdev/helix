@@ -151,14 +151,14 @@ export function AddProductSheet({ open, onClose, categorias, initialProduct }: A
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[2000]"
+        className="fixed inset-0 z-[1000]"
         style={{ background: 'rgba(6,42,99,0.22)', backdropFilter: 'blur(2px)' }}
         onClick={onClose}
       />
 
       {/* Sheet — bottom on mobile, right panel on md+ */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-[2001] flex flex-col md:left-auto md:top-0 md:right-0 md:bottom-0 md:w-[480px]"
+        className="fixed bottom-0 left-0 right-0 z-[1001] flex flex-col md:left-auto md:top-0 md:right-0 md:bottom-0 md:w-[480px]"
         style={{
           background: '#fff',
           borderRadius: '32px 32px 0 0',

@@ -77,7 +77,7 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[10000]"
+        className="fixed inset-0 z-[1000]"
         style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(2px)' }}
         onClick={onClose}
       />
@@ -85,7 +85,7 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
       {/* Sheet */}
       <div
         ref={sheetRef}
-        className="fixed left-0 right-0 bottom-0 z-[10001] flex flex-col"
+        className="fixed left-0 right-0 bottom-0 z-[1001] flex flex-col"
         style={{
           background: '#ffffff',
           borderRadius: '24px 24px 0 0',

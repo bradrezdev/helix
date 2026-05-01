@@ -557,11 +557,11 @@ export function RegisterForm({ sponsor, onSuccess, isAdmin }: RegisterFormProps)
       {/* T&C Bottom Sheet */}
       {tcOpen && (
         <>
-          <div className="fixed inset-0 z-[2000]"
+          <div className="fixed inset-0 z-[1000]"
             style={{ background: 'rgba(6,42,99,0.25)', backdropFilter: 'blur(2px)' }}
             onClick={() => setTcOpen(false)} />
           <div
-            className="fixed bottom-0 left-0 right-0 z-[2001] rounded-t-3xl flex flex-col"
+            className="fixed bottom-0 left-0 right-0 z-[1001] rounded-t-3xl flex flex-col"
             style={{ background: '#fff', maxHeight: '85dvh', boxShadow: '0 -8px 40px rgba(6,42,99,0.15)' }}
           >
             <div className="flex justify-center pt-3">
