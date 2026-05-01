@@ -36,9 +36,9 @@ const DROPDOWN_ITEMS = [
   { icon: Library, label: 'Herramientas de negocio', route: null },
   
   { icon: ArrowDownToLine, label: 'Retiro a cuenta bancaria', route: '/retiros' },
-  { icon: Wallet, label: 'Transferencia interna', route: null },
+  { icon: Wallet, label: 'Billetera', route: '/billetera' },
   { icon: Plus, label: 'Nuevo registro', route: null },
-  { icon: Plane, label: 'Viaje de Liderazgo', route: '/herramientas' },
+  { icon: Plane, label: 'Viaje de Liderazgo', route: '/viaje' },
   { icon: Calculator, label: 'Simulador de Ganancias', route: '/simulador' },
 ]
 
@@ -177,7 +177,7 @@ export function BottomNav() {
                   </span>
                 </button>
               ))}
-              {/* Admin link — only for admins */}
+              {/* Admin links — only for admins */}
               {isAdmin && (
                 <button
                   className="flex flex-row items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors text-left"
@@ -195,6 +195,7 @@ export function BottomNav() {
                   </span>
                 </button>
               )}
+
             </div>
           )}
       </div>

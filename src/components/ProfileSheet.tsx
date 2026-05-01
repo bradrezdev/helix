@@ -62,7 +62,12 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
 
   async function handleSignOut() {
     onClose()
-    await signOut()
+    try {
+      await signOut()
+    } catch {
+      // signOut failed (e.g. network error) — still navigate to login
+      // for 403 (invalid session), useAuth already handles it silently
+    }
     navigate({ to: '/login' })
   }
 

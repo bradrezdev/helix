@@ -1,152 +1,65 @@
-import { useState } from 'react'
 import { useParams, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Copy, Check } from 'lucide-react'
-import { useOrder } from '../../hooks/useOrder'
-import type { ShippingDetail } from '../../hooks/useOrder'
+import { ArrowLeft, ExternalLink } from 'lucide-react'
+import { useAuth } from '../../hooks/useAuth'
+import { useProfile } from '../../hooks/useProfile'
+import { useIsAdmin } from '../../hooks/useAdmin'
+import { useOrderDetail } from '../../hooks/useOrderDetail'
+import { useTaxRate } from '../../hooks/useTaxRate'
+import { PDFDropdownButton } from '../../components/PDFDropdownButton'
+import { ProductCard } from './components/ProductCard'
+import { AuditarSection } from './components/AuditarSection'
+import {
+  formatOrderStatus,
+  formatPaymentMethod,
+  formatDateTime,
+  formatAmount,
+} from '../../lib/formatters'
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Status badge ─────────────────────────────────────────────────────────────
 
-function formatMXN(amount: number | null): string {
-  if (amount == null) return '$—'
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-    minimumFractionDigits: 2,
-  }).format(amount)
-}
-
-function formatDatetime(dateStr: string | null): string {
-  if (!dateStr) return '—'
-  return new Intl.DateTimeFormat('es-MX', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(dateStr))
-}
-
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return '—'
-  return new Intl.DateTimeFormat('es-MX', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(dateStr))
-}
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p
-      className="text-xs font-semibold uppercase tracking-wide mb-3"
-      style={{ color: 'rgba(56,58,63,0.60)', fontFamily: 'Poppins, sans-serif' }}
-    >
-      {children}
-    </p>
-  )
-}
-
-function Card({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      className="bg-white rounded-[32px] shadow-[0_2px_12px_rgba(6,42,99,0.07)] p-5"
-      style={{ border: '1px solid #EAECF0' }}
-    >
-      {children}
-    </div>
-  )
+const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
+  pending: { bg: '#FEF3C7', text: '#D97706' },
+  paid: { bg: '#DCFCE7', text: '#16A34A' },
+  completo: { bg: '#DCFCE7', text: '#16A34A' },
+  en_proceso: { bg: '#EFF6FF', text: '#2563EB' },
+  cancelled: { bg: '#FEF2F2', text: '#EF4444' },
+  reembolsado: { bg: '#F5F3FF', text: '#7C3AED' },
 }
 
 function StatusPill({ status }: { status: string | null }) {
-  const cfg =
-    status === 'paid'
-      ? { bg: '#DCFCE7', text: '#16A34A', label: 'Completado' }
-      : status === 'cancelled'
-      ? { bg: '#FEF2F2', text: '#EF4444', label: 'Cancelado' }
-      : { bg: '#FEF3C7', text: '#D97706', label: 'Pendiente' }
-
+  const cfg = STATUS_COLORS[status ?? ''] ?? { bg: '#FEF3C7', text: '#D97706' }
   return (
     <span
       className="inline-block px-3 py-1 rounded-full text-xs font-semibold"
       style={{ backgroundColor: cfg.bg, color: cfg.text, fontFamily: 'Poppins, sans-serif' }}
     >
-      {cfg.label}
+      {formatOrderStatus(status)}
     </span>
   )
 }
 
-function ShippingSection({ detail }: { detail: ShippingDetail }) {
-  if (detail.type === 'cedi') {
-    const c = detail.data
-    return (
-      <div className="space-y-1">
-        <p className="text-sm font-semibold" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
-          {c.nombre}
-        </p>
-        <p className="text-sm" style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}>
-          {c.calle_numero}, {c.municipio}, {c.estado}
-        </p>
-        {c.encargado && (
-          <p className="text-xs" style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}>
-            Encargado: {c.encargado}
-          </p>
-        )}
-        {c.telefono && (
-          <p className="text-xs" style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}>
-            Tel: {c.telefono}
-          </p>
-        )}
-      </div>
-    )
-  }
+// ─── Detail row ───────────────────────────────────────────────────────────────
 
-  if (detail.type === 'domicilio') {
-    const d = detail.data
-    return (
-      <div className="space-y-1">
-        <p className="text-sm font-semibold" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
-          {d.nombre_completo}
-        </p>
-        <p className="text-sm" style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}>
-          {d.calle_numero}, {d.colonia}
-        </p>
-        <p className="text-sm" style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}>
-          {d.municipio}, {d.estado} C.P. {d.codigo_postal}
-        </p>
-      </div>
-    )
-  }
-
+function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <p className="text-sm" style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}>
-      Recogida en tienda / Sin envío
-    </p>
-  )
-}
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false)
-
-  async function handleCopy() {
-    await navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }
-
-  return (
-    <button
-      onClick={handleCopy}
-      className="ml-2 p-1 rounded-full transition-colors hover:bg-[#F2F4F9]"
-      title="Copiar ID"
-    >
-      {copied ? (
-        <Check size={14} style={{ color: '#16A34A' }} />
-      ) : (
-        <Copy size={14} style={{ color: '#9CA3AF' }} />
-      )}
-    </button>
+    <div className="flex items-start justify-between gap-4">
+      <span
+        className="text-xs shrink-0"
+        style={{
+          color: 'rgba(6,42,99,0.60)',
+          fontFamily: 'Poppins, sans-serif',
+          letterSpacing: '0.05em',
+        }}
+      >
+        {label}
+      </span>
+      <span
+        className="text-xs text-right"
+        style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}
+      >
+        {value}
+      </span>
+    </div>
   )
 }
 
@@ -155,25 +68,32 @@ function CopyButton({ text }: { text: string }) {
 export function OrdenDetailPage() {
   const { orderId } = useParams({ from: '/authenticated/ordenes/$orderId' })
   const navigate = useNavigate()
-  const { order, shippingDetail, loading, error } = useOrder(orderId)
+  const { user } = useAuth()
+  const { data: profile } = useProfile(user?.id ?? '')
+  const isAdmin = useIsAdmin()
+  const { data, loading, error } = useOrderDetail(orderId, isAdmin)
 
-  const shortId = orderId ? `#${orderId.slice(-6).toUpperCase()}` : ''
+  // Derive country from order (available after data loads) or fall back to 'MXN'
+  const orderCountry = data?.order.country ?? 'MXN'
+  const { rate: taxRate, label: taxLabel } = useTaxRate(orderCountry)
 
+  // ── Loading ──────────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <main className="min-h-screen bg-[#F2F4F9] px-5 pt-8 pb-28 space-y-4">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-8 h-8 rounded-full bg-white animate-pulse" />
+          <div className="w-9 h-9 rounded-full bg-white animate-pulse" />
           <div className="h-6 w-40 rounded-full bg-white animate-pulse" />
         </div>
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-white rounded-[32px] h-32 animate-pulse" />
+          <div key={i} className="bg-white rounded-[16px] h-28 animate-pulse" />
         ))}
       </main>
     )
   }
 
-  if (error || !order) {
+  // ── Error ────────────────────────────────────────────────────────────────────
+  if (error || !data) {
     return (
       <main className="min-h-screen bg-[#F2F4F9] px-5 pt-8 flex flex-col items-center justify-center gap-4">
         <p className="text-sm text-red-500" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -190,23 +110,55 @@ export function OrdenDetailPage() {
     )
   }
 
-  const items = order.order_items ?? []
-  const paymentLabel =
-    order.payment_method === 'wallet'
-      ? 'Billetera Virtual'
-      : order.payment_method === 'admin'
-      ? 'Asignación administrativa'
-      : order.payment_method === 'card'
-      ? 'Tarjeta'
-      : order.payment_method ?? '—'
+  const { order, items, shipment, commissions, shippingLabel, cediName } = data
+
+  // ── Tax + totals calculation ──────────────────────────────────────────────────
+  const subtotal = items.reduce((sum, item) => sum + item.total_amount, 0)
+  const shippingCost = (order as { shipping_cost?: number }).shipping_cost ?? 0
+  const taxAmount = subtotal * taxRate
+  const computedTotal = subtotal + shippingCost + taxAmount
+
+  // ── PDF props ────────────────────────────────────────────────────────────────
+  const pdfProps = {
+    order: {
+      order_id: order.order_id ?? null,
+      created_at: order.created_at,
+      status: order.status ?? null,
+      payment_method: order.payment_method ?? null,
+      shipping_data: order.shipping_data ?? null,
+      total_amount: computedTotal,
+      pv: order.pv ?? null,
+      cv: order.cv ?? null,
+      shipping_cost: shippingCost,
+      tax_amount: taxAmount,
+      tax_label: taxLabel,
+      tax_rate: taxRate,
+    },
+    items: items.map((item) => ({
+      product_name: item.product_name ?? null,
+      product_code: item.product_code,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      total_amount: item.total_amount,
+    })),
+    user: {
+      name: profile?.name ?? '',
+      apellidos: profile?.apellidos ?? null,
+      user_id: profile?.user_id ?? 0,
+    },
+    cediName: cediName ?? undefined,
+  }
+
+  // ── Shipping button ──────────────────────────────────────────────────────────
+  const hasGuia = !!shipment?.guia_rastreo
+  const guiaLabel = shipment
+    ? [shipment.carrier, shipment.guia_rastreo].filter(Boolean).join(' — ')
+    : 'Sin guía asignada'
 
   return (
-    <main
-      className="min-h-screen pb-28"
-      style={{ backgroundColor: '#F2F4F9' }}
-    >
-      {/* Header */}
-      <div className="px-5 pt-8 pb-5 flex items-center gap-3">
+    <main className="min-h-screen pb-28" style={{ backgroundColor: '#F2F4F9' }}>
+      {/* ── Top bar ─────────────────────────────────────────────────────────── */}
+      <div className="px-5 pt-8 pb-4 flex items-center gap-3">
         <button
           onClick={() => navigate({ to: '/ordenes' })}
           className="w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-[0_2px_8px_rgba(6,42,99,0.07)] transition-transform active:scale-95"
@@ -214,134 +166,174 @@ export function OrdenDetailPage() {
         >
           <ArrowLeft size={18} style={{ color: '#062A63' }} />
         </button>
-        <div className="flex items-center gap-2 flex-wrap">
-          <h1
-            className="text-xl font-semibold"
-            style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}
-          >
-            Orden {shortId}
-          </h1>
-          <StatusPill status={order.status ?? null} />
-        </div>
+        <div className="flex-1" />
       </div>
 
-      <div className="px-5 space-y-4">
-        {/* PRODUCTOS */}
-        <div>
-          <SectionLabel>Productos</SectionLabel>
-          <Card>
-            <div className="space-y-0 divide-y divide-[#EAECF0]">
-              {items.map((item) => (
-                <div key={item.id} className="py-3 flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate" style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}>
-                      {item.product_name ?? item.product_code}
-                    </p>
-                    <p className="text-xs mt-0.5" style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}>
-                      {item.quantity} × {formatMXN(item.unit_price)}
-                    </p>
-                  </div>
-                  <p className="text-sm font-semibold shrink-0" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
-                    {formatMXN(item.total_amount)}
-                  </p>
-                </div>
-              ))}
-              {items.length === 0 && (
-                <p className="py-3 text-sm text-center" style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}>
-                  Sin productos
-                </p>
-              )}
-            </div>
-            {/* Totals */}
-            <div className="border-t border-[#EAECF0] pt-3 mt-1 space-y-1.5">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-semibold" style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}>Total</span>
-                <span className="text-sm font-bold" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
-                  {formatMXN(order.total_amount)}
-                </span>
-              </div>
-              {order.pv != null && (
-                <div className="flex justify-between items-center">
-                  <span className="text-xs" style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}>PV Total</span>
-                  <span className="text-sm font-semibold" style={{ color: '#0CBCE5', fontFamily: 'Poppins, sans-serif' }}>
-                    {order.pv} PV
-                  </span>
-                </div>
-              )}
-              {order.cv != null && (
-                <div className="flex justify-between items-center">
-                  <span className="text-xs" style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}>CV Total</span>
-                  <span className="text-sm font-semibold" style={{ color: '#0CBCE5', fontFamily: 'Poppins, sans-serif' }}>
-                    {order.cv} CV
-                  </span>
-                </div>
-              )}
-            </div>
-          </Card>
+      <div className="px-5 space-y-5">
+        {/* ── Header ──────────────────────────────────────────────────────── */}
+        <div className="space-y-2">
+          <h1
+            className="font-semibold"
+            style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif', fontSize: '22px' }}
+          >
+            Orden #{order.order_id != null ? Number(order.order_id) : '—'}
+          </h1>
+          <p
+            className="font-semibold"
+            style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif', fontSize: '24px' }}
+          >
+            {formatAmount(computedTotal, order.country)}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold"
+              style={{ backgroundColor: '#E0F9FF', color: '#0CBCE5', fontFamily: 'Poppins, sans-serif' }}
+            >
+              {order.pv} PV
+            </span>
+            <span
+              className="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold"
+              style={{ backgroundColor: '#E0F9FF', color: '#0CBCE5', fontFamily: 'Poppins, sans-serif' }}
+            >
+              {order.cv} CV
+            </span>
+            <StatusPill status={order.status ?? null} />
+          </div>
         </div>
 
-        {/* ENVÍO */}
-        <div>
-          <SectionLabel>Envío</SectionLabel>
-          <Card>
-            <ShippingSection detail={shippingDetail} />
-          </Card>
+        {/* ── Estado de envío button ──────────────────────────────────────── */}
+        {hasGuia ? (
+          <a
+            href={`https://tracking.com/${shipment!.guia_rastreo}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-[12px] text-sm font-medium border transition-colors hover:bg-[#F2F4F9]"
+            style={{
+              color: '#062A63',
+              borderColor: '#062A63',
+              fontFamily: 'Poppins, sans-serif',
+            }}
+          >
+            <ExternalLink size={14} />
+            {guiaLabel}
+          </a>
+        ) : (
+          <button
+            disabled
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-[12px] text-sm font-medium border cursor-not-allowed opacity-50"
+            style={{
+              color: '#062A63',
+              borderColor: '#062A63',
+              fontFamily: 'Poppins, sans-serif',
+            }}
+          >
+            Sin guía asignada
+          </button>
+        )}
+
+        <hr className="border-[#EAECF0] my-4" />
+
+        {/* ── Detalles section ─────────────────────────────────────────────── */}
+        <div className="space-y-3">
+          <p
+            className="font-semibold"
+            style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif', fontSize: '17px' }}
+          >
+            Detalles
+          </p>
+          <div
+            className="bg-white rounded-[16px] shadow-sm p-4 space-y-3"
+            style={{ border: '1px solid #EAECF0' }}
+          >
+            <DetailRow label="Creado" value={formatDateTime(order.created_at)} />
+            {isAdmin && (
+              <DetailRow label="Actualizado" value={formatDateTime(order.updated_at)} />
+            )}
+            <DetailRow label="Pago" value={formatPaymentMethod(order.payment_method)} />
+            <DetailRow label="Envío" value={shippingLabel} />
+          </div>
         </div>
 
-        {/* PAGO */}
-        <div>
-          <SectionLabel>Pago</SectionLabel>
-          <Card>
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <span
-                  className="inline-block px-3 py-1 rounded-full text-xs font-semibold"
-                  style={{ backgroundColor: '#EFF6FF', color: '#062A63', fontFamily: 'Poppins, sans-serif' }}
-                >
-                  {paymentLabel}
-                </span>
-              </div>
-              {order.status === 'pending' ? (
-                <p className="text-sm font-medium" style={{ color: '#D97706', fontFamily: 'Poppins, sans-serif' }}>
-                  Pendiente de pago
-                </p>
-              ) : (
-                order.paid_at && (
-                  <p className="text-sm" style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}>
-                    Pagado el {formatDatetime(order.paid_at)}
-                  </p>
-                )
-              )}
-            </div>
-          </Card>
+        <hr className="border-[#EAECF0] my-4" />
+
+        {/* ── Productos section ─────────────────────────────────────────────── */}
+        <div className="space-y-3">
+          <p
+            className="font-semibold"
+            style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif', fontSize: '17px' }}
+          >
+            Productos
+          </p>
+          <div className="space-y-3">
+            {items.length === 0 ? (
+              <p
+                className="text-sm text-center py-4"
+                style={{ color: 'rgba(6,42,99,0.40)', fontFamily: 'Poppins, sans-serif' }}
+              >
+                Sin productos
+              </p>
+            ) : (
+              items.map((item) => (
+                <ProductCard key={item.id} item={item} country={order.country} />
+              ))
+            )}
+          </div>
+          <div className="flex justify-end">
+            <PDFDropdownButton {...pdfProps} />
+          </div>
         </div>
 
-        {/* INFORMACIÓN */}
-        <div>
-          <SectionLabel>Información</SectionLabel>
-          <Card>
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs mb-1" style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}>ID de orden</p>
-                <div className="flex items-center gap-1">
-                  <span
-                    className="text-sm font-semibold font-mono"
-                    style={{ color: '#383A3F' }}
-                  >
-                    #{order.order_id ?? order.id.slice(-6).toUpperCase()}
-                  </span>
-                  <CopyButton text={order.order_id ?? order.id} />
-                </div>
-              </div>
-              <div>
-                <p className="text-xs mb-1" style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}>Fecha de creación</p>
-                <p className="text-sm" style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}>
-                  {formatDate(order.created_at)}
-                </p>
-              </div>
-            </div>
-          </Card>
+        {/* ── Totals breakdown ─────────────────────────────────────────────── */}
+        <div
+          className="bg-white rounded-[16px] shadow-sm p-4 space-y-2"
+          style={{ border: '1px solid #EAECF0' }}
+        >
+          <DetailRow
+            label="Subtotal"
+            value={formatAmount(subtotal, order.country)}
+          />
+          {shippingCost > 0 && (
+            <DetailRow
+              label="Envio"
+              value={formatAmount(shippingCost, order.country)}
+            />
+          )}
+          {taxRate > 0 && (
+            <DetailRow
+              label={`${taxLabel} (${(taxRate * 100).toFixed(0)}%)`}
+              value={formatAmount(taxAmount, order.country)}
+            />
+          )}
+          <div
+            className="flex items-start justify-between gap-4 pt-2"
+            style={{ borderTop: '1px solid #EAECF0' }}
+          >
+            <span
+              className="text-xs font-semibold shrink-0"
+              style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}
+            >
+              Total
+            </span>
+            <span
+              className="text-sm font-bold text-right"
+              style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}
+            >
+              {formatAmount(computedTotal, order.country)}
+            </span>
+          </div>
         </div>
+
+        {/* ── Auditar section (admin only) ────────────────────────────────── */}
+        {isAdmin && (
+          <>
+            <hr className="border-[#EAECF0] my-4" />
+            <AuditarSection
+              commissions={commissions}
+              loading={loading}
+              country={order.country}
+            />
+          </>
+        )}
       </div>
     </main>
   )

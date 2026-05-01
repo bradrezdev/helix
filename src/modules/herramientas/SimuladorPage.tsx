@@ -78,8 +78,10 @@ const MATCH_BONUS: Record<Rank, number[]> = {
 }
 
 // Infinito Patrocinio by rank (levels 4+ in sponsor tree)
+// Differential bonus: beneficiary earns their rank % MINUS the highest rank % found
+// in that descendant branch (if no ranked person below → earns full %)
 const INFINITO_PATROCINIO: Record<Rank, number> = {
-  Bronce: 0.06,
+  Bronce: 0,
   Plata: 0.07,
   Oro: 0.08,
   Platino: 0.09,
@@ -113,9 +115,11 @@ interface BonoBreakdown {
   rango: Rank
   patrocinio: { level1: number; level2: number; level3: number; total: number }
   infinitoPatrocinio: number
+  infinitoPatrocinioNote: string
   unilevel: { level: number; personas: number; pv: number; cv: number; bono: number; pct: number }[]
   unilevelTotal: number
   infinitoUnilevel: number
+  infinitoUnilevelNote: string
   match: { level: number; personas: number; unilevelEarnings: number; bono: number; pct: number }[]
   matchTotal: number
   teamStructure: { level: number; personas: number; pv: number; cv: number; vg: number; cvg: number }[]
@@ -155,14 +159,26 @@ function calcBonuses(cfg: SimConfig): BonoBreakdown {
   patrocinio.total = patrocinio.level1 + patrocinio.level2 + patrocinio.level3
 
   // ── Bono Infinito Patrocinio (sponsor levels 4+) ──
+  // Differential bonus: your rank % minus the highest rank % in descendant branch.
+  // In this simulation, all nodes are homogeneous (no ranked individuals below),
+  // so the differential = full rank % (no deduction).
+  // Bronce earns 0% (not eligible).
   const infPatrocinioRank = INFINITO_PATROCINIO[rango]
   let infPatrocinio = 0
-  for (let l = 4; l <= Math.min(levels, 9); l++) {
-    const idx = l - 1
-    if (levelCounts[idx]) {
-      infPatrocinio += levelCounts[idx] * cvPorPersona * infPatrocinioRank
+  // Only eligible if rank has a non-zero Infinito Patrocinio %
+  if (infPatrocinioRank > 0) {
+    for (let l = 4; l <= Math.min(levels, 9); l++) {
+      const idx = l - 1
+      if (levelCounts[idx]) {
+        // Differential: full % because no ranked person in descendance (simulation assumption)
+        infPatrocinio += levelCounts[idx] * cvPorPersona * infPatrocinioRank
+      }
     }
   }
+  const infinitoPatrocinioNote =
+    infPatrocinioRank === 0
+      ? 'Solo aplica desde Plata en adelante'
+      : `${(infPatrocinioRank * 100).toFixed(2)}% diferencial (sin rangos calificados en la descendencia)`
 
   // ── Bono Uninivel (levels 1-9) ──
   const unilevel: BonoBreakdown['unilevel'] = []
@@ -184,45 +200,60 @@ function calcBonuses(cfg: SimConfig): BonoBreakdown {
   }
 
   // ── Bono Infinito Uninivel (level 10+) ──
-  // For simulation, treat nivel 10+ as nivel 10
+  // Only for Platino+ ranks. Differential: your % minus highest ranked person's % in branch.
+  // In this simulation (homogeneous network), no ranked persons below → full % applies.
   const infUnilevelPct = INFINITO_UNILEVEL[rango] || 0
-  const infinitoUnilevel = levelCounts.reduce((sum, count, idx) => {
-    if (idx >= 10) return sum + count * pvPorPersona * infUnilevelPct
-    return sum
-  }, 0)
+  let infinitoUnilevel = 0
+  let infinitoUnilevelNote = ''
 
-  // ── Bono Match (by rank on SPONSOR TREE, using unilevel percentages)
-  // For each sponsor tree level (1-5), calculate what unilevel bonus would be
-  // using a weighted average of unilevel percentages across depths
+  const isPlatino = infUnilevelPct > 0
+  if (!isPlatino) {
+    infinitoUnilevelNote = 'Solo aplica desde Platino en adelante'
+  } else if (nivelesProfundidad < 10) {
+    infinitoUnilevelNote = 'Aumenta la profundidad a 10+ para ver este bono'
+  } else {
+    // Calculate CV for levels 10+
+    let cvLevels10Plus = 0
+    for (let l = 10; l <= nivelesProfundidad; l++) {
+      const count = Math.pow(directosPorPersona, l)
+      cvLevels10Plus += count * cvPorPersona
+    }
+    // Differential = full % (no ranked persons in descendance in this simulation)
+    infinitoUnilevel = cvLevels10Plus * infUnilevelPct
+    infinitoUnilevelNote = `${(infUnilevelPct * 100).toFixed(2)}% diferencial sobre CV niveles 10+`
+  }
+
+  // ── Bono Match ──
+  // For each person at sponsor level L, calculate their own uninivel earnings
+  // from their sub-network, then apply the match percentage
   const matchPcts = MATCH_BONUS[rango]
   const match: BonoBreakdown['match'] = []
   let matchTotal = 0
 
-  // Average unilevel percentage across all 9 levels (for estimating unilevel earnings at each sponsor level)
-  const avgUnilevelPct = UNILEVEL_PCT.reduce((a, b) => a + b, 0) / UNILEVEL_PCT.length
+  for (let l = 1; l <= Math.min(levels, matchPcts.length); l++) {
+    const pct = matchPcts[l - 1] || 0
+    if (pct === 0) continue
+    const personasAtL = levelCounts[l - 1] || 0
+    if (personasAtL === 0) continue
 
-  // Match applies to unilevel earnings that people at each sponsor level WOULD generate
-  // Using average unilevel percentage since we can't know each person's exact unilevel depth
-  for (let l = 1; l <= Math.min(levels, 5); l++) {
-    const personas = levelCounts[l - 1] || 0
-    if (personas > 0) {
-      const pct = matchPcts[l - 1] || 0
-      if (pct > 0) {
-        // Each person at sponsor level l has pvPorPersona
-        // Their unilevel earnings = pvPorPersona × avgUnilevelPct
-        const unilevelEarnings = personas * pvPorPersona * avgUnilevelPct
-        // Match = unilevel earnings × rank percentage at this sponsor level
-        const bono = unilevelEarnings * pct
-        match.push({
-          level: l,
-          personas,
-          unilevelEarnings,
-          bono,
-          pct: pct * 100,
-        })
-        matchTotal += bono
-      }
+    // Calculate uninivel earnings for one person at sponsor level L
+    // They have sub-network going (nivelesProfundidad - L) levels deep
+    const subDepth = Math.min(9, nivelesProfundidad - l)
+    let personUnilevelEarnings = 0
+    for (let k = 1; k <= subDepth; k++) {
+      const subCount = Math.pow(directosPorPersona, k)
+      personUnilevelEarnings += subCount * cvPorPersona * UNILEVEL_PCT[k - 1]
     }
+
+    const bono = personasAtL * personUnilevelEarnings * pct
+    match.push({
+      level: l,
+      personas: personasAtL,
+      unilevelEarnings: personasAtL * personUnilevelEarnings,
+      bono,
+      pct: pct * 100,
+    })
+    matchTotal += bono
   }
 
   // ── Team Structure Table ──
@@ -252,9 +283,11 @@ function calcBonuses(cfg: SimConfig): BonoBreakdown {
     rango,
     patrocinio,
     infinitoPatrocinio: infPatrocinio,
+    infinitoPatrocinioNote,
     unilevel,
     unilevelTotal,
     infinitoUnilevel,
+    infinitoUnilevelNote,
     match,
     matchTotal,
     teamStructure,
@@ -659,17 +692,15 @@ export function SimuladorPage() {
           <div>
             <InputLabel>
               Niveles de profundidad
-              <span className="ml-1 font-normal text-[#9CA3AF]">(1–9)</span>
             </InputLabel>
             <input
               type="number"
               className={inputCls}
               style={{ fontFamily: 'Poppins, sans-serif', color: '#062A63' }}
               min={1}
-              max={9}
               value={cfg.nivelesProfundidad}
               onChange={(e) =>
-                update('nivelesProfundidad', Math.min(9, Math.max(1, Number(e.target.value) || 0)))
+                update('nivelesProfundidad', Math.max(1, Number(e.target.value) || 1))
               }
             />
           </div>
@@ -727,16 +758,16 @@ export function SimuladorPage() {
             />
 
             <BonusCard
-              icon={<Infinity size={18} color="#0CBCE5" />}
+              icon={<Infinity size={18} color={bonuses.infinitoPatrocinio > 0 ? '#0CBCE5' : '#9CA3AF'} />}
               label="Bono Infinito Patrocinio"
-              subtitle="Niveles 4+ en árbol de patrocinio"
+              subtitle={bonuses.infinitoPatrocinioNote}
               amount={bonuses.infinitoPatrocinio}
             />
 
             <BonusCard
-              icon={<TrendingUp size={18} color="#0CBCE5" />}
+              icon={<TrendingUp size={18} color={bonuses.infinitoUnilevel > 0 ? '#0CBCE5' : '#9CA3AF'} />}
               label="Bono Infinito Uninivel"
-              subtitle="Nivel 10+ unilevel"
+              subtitle={bonuses.infinitoUnilevelNote}
               amount={bonuses.infinitoUnilevel}
             />
 

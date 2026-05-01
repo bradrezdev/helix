@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react'
-import { Shuffle, X, Eye, EyeOff, Phone, Lock } from 'lucide-react'
+import { Shuffle, X, Eye, EyeOff, Phone, Lock, CheckCircle2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 // ── Country codes ─────────────────────────────────────────────────────────────
@@ -111,12 +111,16 @@ export interface SponsorConfig {
 export interface RegisterFormProps {
   sponsor: SponsorConfig
   onSuccess: () => void
+  isAdmin?: boolean
 }
 
-export function RegisterForm({ sponsor, onSuccess }: RegisterFormProps) {
+export function RegisterForm({ sponsor, onSuccess, isAdmin }: RegisterFormProps) {
   // ── Sponsor state ─────────────────────────────────────────────────────────
   const [sponsorInput, setSponsorInput] = useState(sponsor.prefillValue ?? '')
-  const [sponsorId, setSponsorId] = useState<string | null>(sponsor.resolved?.id ?? null)
+  // sponsorNumericId holds the bigint user_id (not UUID) — needed for the sponsor_id column
+  const [sponsorId, setSponsorId] = useState<string | null>(
+    sponsor.resolved ? String(sponsor.resolved.user_id) : null
+  )
   const [sponsorName, setSponsorName] = useState<string | null>(sponsor.resolved?.name ?? null)
   const [sponsorStatus, setSponsorStatus] = useState<SponsorStatus>(
     sponsor.resolved ? 'found' : sponsor.prefillValue ? 'idle' : 'idle'
@@ -138,6 +142,12 @@ export function RegisterForm({ sponsor, onSuccess }: RegisterFormProps) {
   const [tcAccepted, setTcAccepted] = useState(false)
   const [tcOpen, setTcOpen] = useState(false)
   const [emailTouched, setEmailTouched] = useState(false)
+  const [firstNameTouched, setFirstNameTouched] = useState(false)
+  const [lastNameTouched, setLastNameTouched] = useState(false)
+
+  const NAME_REGEX = /^[a-zA-ZÀ-ÿ\s]{2,}$/
+  const firstNameError = firstNameTouched && !NAME_REGEX.test(firstName.trim())
+  const lastNameError = lastNameTouched && !NAME_REGEX.test(lastName.trim())
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -160,7 +170,8 @@ export function RegisterForm({ sponsor, onSuccess }: RegisterFormProps) {
       .eq('user_id', Number(trimmed))
       .single()
     if (data) {
-      setSponsorId(data.id); setSponsorName(data.name); setSponsorStatus('found')
+      // Use numeric user_id (bigint) — sponsor_id column is bigint, not uuid
+      setSponsorId(String(data.user_id)); setSponsorName(data.name); setSponsorStatus('found')
     } else {
       setSponsorId(null); setSponsorName(null); setSponsorStatus('not_found')
     }
@@ -184,6 +195,9 @@ export function RegisterForm({ sponsor, onSuccess }: RegisterFormProps) {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault(); setError(null)
+    setFirstNameTouched(true); setLastNameTouched(true)
+    if (!NAME_REGEX.test(firstName.trim())) { setError('El nombre debe tener al menos 2 letras'); return }
+    if (!NAME_REGEX.test(lastName.trim())) { setError('Los apellidos deben tener al menos 2 letras'); return }
     if (!isValidEmail(email)) { setError('Correo electrónico inválido'); return }
     if (password !== confirmPassword) { setError('Las contraseñas no coinciden'); return }
     if (pwStrength.score < 2) { setError('Contraseña débil — mínimo 8 chars, mayúscula y número'); return }
@@ -192,23 +206,42 @@ export function RegisterForm({ sponsor, onSuccess }: RegisterFormProps) {
     setSubmitting(true)
     try {
       const fullName = `${firstName.trim()} ${lastName.trim()}`
-      const resolvedSponsorId = sponsor.resolved ? String(sponsor.resolved.user_id) : sponsorId
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email, password,
-        options: { data: { name: fullName, username } },
-      })
-      if (authError) throw authError
-      if (!authData.user) throw new Error('No se pudo crear el usuario')
-      const { error: insertError } = await supabase.from('users').insert({
-        id: authData.user.id,
-        name: fullName,
-        apellidos: lastName.trim(),
-        email,
-        membership: 'socio',
-        sponsor_id: resolvedSponsorId,
-        enrollment_date: new Date().toISOString().split('T')[0],
-      })
-      if (insertError) throw insertError
+      const resolvedSponsorId = sponsor.resolved ? sponsor.resolved.user_id : (sponsorId ? Number(sponsorId) : null)
+
+      if (isAdmin) {
+        // Admin registration: use Edge Function to avoid session takeover
+        const { data, error: fnError } = await supabase.functions.invoke('register-user', {
+          body: {
+            email,
+            password,
+            name: fullName,
+            apellidos: lastName.trim(),
+            sponsor_user_id: resolvedSponsorId,
+            country: country.code,
+            username,
+          },
+        })
+        if (fnError) throw fnError
+        const result = data as { success?: boolean; error?: string }
+        if (!result?.success) throw new Error(result?.error ?? 'Error al registrar')
+      } else {
+        // Normal registration: signUp creates auth user + session
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email, password,
+          options: {
+            data: {
+              name: fullName,
+              apellidos: lastName.trim(),
+              username,
+              sponsor_id: resolvedSponsorId,
+              country: country.code,
+            },
+          },
+        })
+        if (authError) throw authError
+        if (!authData.user) throw new Error('No se pudo crear el usuario')
+      }
+      // Trigger on_auth_user_created inserts into public.users automatically
       onSuccess()
     } catch (err) {
       setError((err as Error)?.message ?? 'Error al registrarse')
@@ -262,9 +295,10 @@ export function RegisterForm({ sponsor, onSuccess }: RegisterFormProps) {
               </p>
             )}
             {sponsorStatus === 'found' && sponsorName && (
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full self-start"
-                style={{ background: 'rgba(12,188,229,0.12)', color: '#0CBCE5', fontFamily: 'Poppins, sans-serif' }}>
-                X {sponsorName}
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full self-start flex items-center gap-1"
+                style={{ background: 'rgba(12,188,229,0.12)', color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
+                <CheckCircle2 size={12} style={{ color: '#0CBCE5' }} />
+                {sponsorName}
               </span>
             )}
             {sponsorStatus === 'not_found' && (
@@ -291,19 +325,31 @@ export function RegisterForm({ sponsor, onSuccess }: RegisterFormProps) {
             <input
               type="text" value={firstName} onChange={e => setFirstName(e.target.value)}
               required placeholder="Juan"
-              className={inputBase} style={inputStyle}
+              className={inputBase}
+              style={{ ...inputStyle, borderColor: firstNameError ? '#EF4444' : '#EAECF0' }}
               onFocus={e => (e.currentTarget.style.borderColor = '#0CBCE5')}
-              onBlur={e => (e.currentTarget.style.borderColor = '#EAECF0')}
+              onBlur={e => { setFirstNameTouched(true); e.currentTarget.style.borderColor = NAME_REGEX.test(firstName.trim()) ? '#EAECF0' : '#EF4444' }}
             />
+            {firstNameError && (
+              <p className="text-[11px]" style={{ color: '#EF4444', fontFamily: 'Poppins, sans-serif' }}>
+                Mínimo 2 letras, sin números
+              </p>
+            )}
           </Field>
           <Field label="Apellidos">
             <input
               type="text" value={lastName} onChange={e => setLastName(e.target.value)}
               required placeholder="Pérez García"
-              className={inputBase} style={inputStyle}
+              className={inputBase}
+              style={{ ...inputStyle, borderColor: lastNameError ? '#EF4444' : '#EAECF0' }}
               onFocus={e => (e.currentTarget.style.borderColor = '#0CBCE5')}
-              onBlur={e => (e.currentTarget.style.borderColor = '#EAECF0')}
+              onBlur={e => { setLastNameTouched(true); e.currentTarget.style.borderColor = NAME_REGEX.test(lastName.trim()) ? '#EAECF0' : '#EF4444' }}
             />
+            {lastNameError && (
+              <p className="text-[11px]" style={{ color: '#EF4444', fontFamily: 'Poppins, sans-serif' }}>
+                Mínimo 2 letras, sin números
+              </p>
+            )}
           </Field>
         </div>
 

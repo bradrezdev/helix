@@ -3,12 +3,15 @@ import { ArrowLeft, Wallet, CreditCard, CheckCircle2, Loader2, MapPin, Home, Bui
 import { useNavigate } from '@tanstack/react-router'
 import { useCart } from '../../store/cartStore'
 import { useAuth } from '../../hooks/useAuth'
+import { useProfile } from '../../hooks/useProfile'
+import { useTaxRate } from '../../hooks/useTaxRate'
 import { supabase } from '../../lib/supabase'
 import { useDefaultDireccion, setDefaultDireccion } from '../../hooks/useDirecciones'
 import type { Direccion } from '../../hooks/useDirecciones'
 import type { Cedi } from '../../hooks/useCedis'
 import { NuevaDireccionSheet } from '../../components/NuevaDireccionSheet'
 import { CediSelectorSheet } from '../../components/CediSelectorSheet'
+import { getProductPrice, getCountryCurrency } from '../../utils/pricing'
 
 type Step = 'review' | 'payment' | 'confirm'
 type PaymentMethod = 'wallet' | 'card'
@@ -16,13 +19,20 @@ type ShippingOption = 'nueva' | 'default' | 'cedi' | null
 
 interface OrderResult {
   order_id: string
+  order_code: string
   status: string
+  membership_upgraded?: boolean
+  process_verified?: boolean
 }
 
 export function CheckoutPage() {
   const navigate = useNavigate()
   const { items, total, totalPV, clear } = useCart()
   const { user } = useAuth()
+  const { profile } = useProfile(user?.id ?? '')
+  const country: string = getCountryCurrency(profile?.country ?? 'MX')
+  const membership: string = profile?.membership ?? 'socio'
+  const { rate: taxRate, label: taxLabel } = useTaxRate(country)
 
   const [step, setStep] = useState<Step>('review')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('wallet')
@@ -41,9 +51,22 @@ export function CheckoutPage() {
 
   const cartTotal = total()
   const cartPV = totalPV()
+  const taxAmount = cartTotal * taxRate
+  const grandTotal = cartTotal + taxAmount
 
   async function handleConfirmPayment() {
     if (!user) return
+
+    // Shipping guard
+    if (!shippingOption) {
+      setError('Selecciona una opción de envío')
+      return
+    }
+    if (shippingOption === 'cedi' && !selectedCedi) {
+      setError('Selecciona un CEDI')
+      return
+    }
+
     setLoading(true)
     setError(null)
 
@@ -52,7 +75,7 @@ export function CheckoutPage() {
         product_code: i.product.code,
         product_name: i.product.name,
         quantity: i.quantity,
-        unit_price: i.product.price_socio_mxn,
+        unit_price: getProductPrice(i.product, country, membership),
         pv: i.product.pv,
         cv: i.product.cv,
       }))
@@ -63,12 +86,14 @@ export function CheckoutPage() {
           ? { type: 'domicilio', direccion_id: defaultDireccion.id }
           : null
 
-      const { data, error: rpcError } = await supabase.rpc('place_order', {
+      const { data, error: rpcError } = await supabase.rpc('place_order_with_membership', {
         p_user_id: user.id,
         p_items: payload,
-        p_total_amount: cartTotal,
+        p_total_amount: grandTotal,
         p_payment_method: paymentMethod,
         p_shipping_data: shippingData,
+        p_tax_amount: taxAmount,
+        p_with_membership: true,
       })
 
       if (rpcError) throw rpcError
@@ -121,7 +146,7 @@ export function CheckoutPage() {
           ¡Orden confirmada!
         </h2>
         <p className="text-sm mb-1" style={{ color: '#6B7280', fontFamily: 'Poppins, sans-serif' }}>
-          Orden #{orderResult.order_id}
+          Orden #{orderResult.order_code ?? orderResult.order_id}
         </p>
         <p className="text-xs mb-8" style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}>
           Estado: {orderResult.status === 'paid' ? 'Pagado X' : 'Pendiente'}
@@ -186,7 +211,7 @@ export function CheckoutPage() {
                   {product.name} × {quantity}
                 </span>
                 <span className="text-sm font-semibold" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
-                  ${(product.price_socio_mxn * quantity).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                  {(getProductPrice(product, country, membership) * quantity).toLocaleString('es-MX', { minimumFractionDigits: 2, style: 'currency', currency: country === 'USD' ? 'USD' : country === 'EUR' ? 'EUR' : country === 'COP' ? 'COP' : 'MXN' })}
                 </span>
               </div>
             ))}
@@ -195,11 +220,32 @@ export function CheckoutPage() {
             className="flex justify-between items-center mt-3 pt-3"
             style={{ borderTop: '1px solid #EAECF0' }}
           >
+            <span className="text-xs" style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}>
+              Subtotal
+            </span>
+            <span className="text-sm" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
+              ${cartTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })} {country}
+            </span>
+          </div>
+          {taxRate > 0 && (
+            <div className="flex justify-between items-center mt-1">
+              <span className="text-xs" style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}>
+                {taxLabel} ({(taxRate * 100).toFixed(0)}%)
+              </span>
+              <span className="text-sm" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
+                ${taxAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })} {country}
+              </span>
+            </div>
+          )}
+          <div
+            className="flex justify-between items-center mt-2 pt-2"
+            style={{ borderTop: '1px solid #EAECF0' }}
+          >
             <span className="text-sm font-bold" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
               Total · {cartPV.toFixed(0)} PV
             </span>
             <span className="text-lg font-bold" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
-              ${cartTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN
+              ${grandTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })} {country}
             </span>
           </div>
         </div>
