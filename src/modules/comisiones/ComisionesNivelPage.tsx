@@ -91,7 +91,7 @@ function ErrorCard({ onRetry }: { onRetry: () => void }) {
 
 function EmptyState() {
   return (
-    <div className="bg-white rounded-[24px] shadow-[0_4px_24px_rgba(6,42,99,0.07)] p-8 text-center">
+    <div className="bg-white rounded-[24px] shadow-[0_4px_24px_rgba(6,42,99,0.07)] p-8 text-center" data-testid="comisiones-empty">
       <p
         className="text-sm text-[#9CA3AF]"
         style={{ fontFamily: 'Poppins, sans-serif' }}
@@ -155,7 +155,7 @@ export default function ComisionesNivelPage() {
     if (niveles.length === 0) return <EmptyState />
 
     return (
-      <div className="space-y-3">
+    <div className="space-y-3" data-testid="comisiones-loading">
         {niveles.map((nivel) => (
           <NivelAccordion
             key={nivel.level}
@@ -171,7 +171,7 @@ export default function ComisionesNivelPage() {
   }
 
   return (
-    <div className="max-w-[1920px] mx-auto px-4 py-6">
+    <div className="max-w-[1920px] mx-auto px-4 py-6" data-testid="comisiones-nivel-container">
       {/* ── Title ── */}
       <h1
         className="text-xl font-bold mb-4"

@@ -207,12 +207,18 @@ async function fetchOrderDetail(
   orderId: string,
   isAdmin: boolean
 ): Promise<OrderDetailData> {
-  // Step 1: fetch order
-  const { data: orderData, error: orderError } = await supabase
-    .from('orders')
-    .select('*')
-    .eq('id', orderId)
-    .single()
+  // Step 1: fetch order — supports both UUID (id) and order code (order_id)
+  // UUID pattern: 8-4-4-4-12 hex chars. Everything else is an order code.
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId)
+  
+  let orderQuery = supabase.from('orders').select('*')
+  if (isUuid) {
+    orderQuery = orderQuery.eq('id', orderId)
+  } else {
+    orderQuery = orderQuery.eq('order_id', orderId)
+  }
+  
+  const { data: orderData, error: orderError } = await orderQuery.single()
 
   if (orderError) throw new Error(orderError.message)
 
@@ -255,11 +261,11 @@ async function fetchOrderDetail(
     kit_type: raw.kit_type,
   }
 
-  // Step 2: fetch items
+  // Step 2: fetch items using the resolved UUID
   const { data: itemsData, error: itemsError } = await supabase
     .from('order_items')
     .select('*')
-    .eq('order_id', orderId)
+    .eq('order_id', raw.id)
 
   if (itemsError) {
     console.warn('[useOrderDetail] order_items fetch failed:', itemsError.message)
@@ -276,10 +282,12 @@ async function fetchOrderDetail(
     cv: number
   }>
 
+  // All sub-queries MUST use the resolved order UUID, not the input orderId
+  const resolvedOrderId = order.id
   const productCodes = rawItems.map((i) => i.product_code).filter(Boolean)
   const shippingData = order.shipping_data as ShippingData
 
-  // Step 3: parallel fetches
+  // Step 3: parallel fetches using resolved UUID
   const [
     cantidadMapResult,
     shippingResult,
@@ -288,8 +296,8 @@ async function fetchOrderDetail(
   ] = await Promise.allSettled([
     fetchProductsCantidad(productCodes),
     fetchShipping(shippingData),
-    fetchShipment(orderId),
-    isAdmin ? fetchCommissions(orderId) : Promise.resolve([]),
+    fetchShipment(resolvedOrderId),
+    isAdmin ? fetchCommissions(resolvedOrderId) : Promise.resolve([]),
   ])
 
   const cantidadMap =

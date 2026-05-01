@@ -352,6 +352,7 @@ function OrderCard({ order, profile, showBuyerInfo, buyerName, treeLevel }: Orde
     <div
       className="bg-white rounded-[16px] shadow-sm p-4"
       style={{ border: '1px solid #EAECF0' }}
+      data-testid={`pedidos-order-card-${order.id}`}
     >
       {/* Header row */}
       <div className="flex items-center justify-between mb-3">
@@ -439,6 +440,7 @@ function OrderCard({ order, profile, showBuyerInfo, buyerName, treeLevel }: Orde
               border: '1px solid #0CBCE5',
               fontFamily: 'Poppins, sans-serif',
             }}
+            data-testid={`pedidos-ver-detalles-${navId}`}
           >
             Ver detalles
           </button>
@@ -587,7 +589,7 @@ export function PedidosPage() {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <main className="min-h-screen pb-28" style={{ backgroundColor: '#F2F4F9' }}>
+    <main className="min-h-screen pb-28" style={{ backgroundColor: '#F2F4F9' }} data-testid="pedidos-container">
       {/* Header */}
       <div className="px-5 pt-8 pb-4 flex items-center justify-between">
         <h1
@@ -627,6 +629,7 @@ export function PedidosPage() {
               color: mode === 'own' ? '#062A63' : '#9CA3AF',
               boxShadow: mode === 'own' ? '0 1px 3px rgba(0,0,0,0.06)' : undefined,
             }}
+            data-testid="pedidos-segment-own"
           >
             Mis órdenes
           </button>
@@ -640,6 +643,7 @@ export function PedidosPage() {
               color: mode === 'network' ? '#062A63' : '#9CA3AF',
               boxShadow: mode === 'network' ? '0 1px 3px rgba(0,0,0,0.06)' : undefined,
             }}
+            data-testid="pedidos-segment-network"
           >
             Órdenes de mi red
           </button>

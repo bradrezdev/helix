@@ -98,7 +98,7 @@ function ErrorCard({ onRetry }: { onRetry: () => void }) {
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="mt-4 bg-white rounded-[24px] shadow-[0_4px_24px_rgba(6,42,99,0.07)] p-8 text-center">
+    <div className="mt-4 bg-white rounded-[24px] shadow-[0_4px_24px_rgba(6,42,99,0.07)] p-8 text-center" data-testid="ganancias-empty">
       <p
         className="text-sm text-[#9CA3AF]"
         style={{ fontFamily: 'Poppins, sans-serif' }}
@@ -160,7 +160,7 @@ export default function GananciasPage() {
     }
 
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4" data-testid="ganancias-loading">
         {grupos.map((g) => (
           <BonoCard
             key={g.key}
@@ -174,7 +174,7 @@ export default function GananciasPage() {
   }
 
   return (
-    <div className="max-w-[1920px] mx-auto px-4 py-6">
+    <div className="max-w-[1920px] mx-auto px-4 py-6" data-testid="ganancias-container">
       {/* Page title */}
       <h1
         className="text-xl font-bold"

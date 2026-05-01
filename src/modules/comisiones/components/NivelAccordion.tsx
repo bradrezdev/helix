@@ -31,6 +31,7 @@ export default function NivelAccordion({
         'bg-white rounded-[24px] shadow-[0_4px_24px_rgba(6,42,99,0.07)] overflow-hidden',
         expanded && 'border-l-[3px] border-l-[#0CBCE5]',
       )}
+      data-testid={`nivel-accordion-${nivel.level}`}
     >
       {/* ── Header (clickable) ── */}
       <button
@@ -39,6 +40,7 @@ export default function NivelAccordion({
         className="w-full flex items-center justify-between p-4 cursor-pointer text-left"
         style={{ fontFamily: 'Poppins, sans-serif' }}
         aria-expanded={expanded}
+        data-testid={`nivel-header-${nivel.level}`}
       >
         <div className="flex items-center gap-4 text-sm">
           {/* Level number */}
@@ -51,7 +53,7 @@ export default function NivelAccordion({
           </span>
 
           {/* Socios count */}
-          <span className="text-[#383A3F]">
+          <span className="text-[#383A3F]" data-testid={`nivel-count-${nivel.level}`}>
             {nivel.total_socios} {nivel.total_socios === 1 ? 'socio' : 'socios'}
           </span>
 

@@ -51,7 +51,7 @@ export function BilleteraPage() {
   }
 
   return (
-    <main className="bg-[#F2F4F9] min-h-screen pb-32" style={{ fontFamily: 'Poppins, sans-serif' }}>
+    <main className="bg-[#F2F4F9] min-h-screen pb-32" style={{ fontFamily: 'Poppins, sans-serif' }} data-testid="billetera-container">
       {/* Header */}
       <div className="bg-white border-b border-[#EAECF0] px-5 pt-12 pb-4">
         <div className="flex items-center justify-between mb-1">
@@ -102,7 +102,7 @@ export function BilleteraPage() {
                 style={{ background: 'linear-gradient(135deg, #062A63 0%, #0CBCE5 100%)' }}
               >
                 <p className="text-xs font-medium opacity-70 mb-1">Saldo disponible</p>
-                <p className="text-3xl font-bold mb-1">
+                <p className="text-3xl font-bold mb-1" data-testid="billetera-balance-disponible">
                   {Number(primaryWallet.balance).toFixed(2)}
                 </p>
                 <p className="text-sm font-semibold opacity-80">{primaryWallet.currency}</p>
@@ -169,13 +169,13 @@ export function BilleteraPage() {
           ) : error ? (
             <p className="text-red-500 text-sm">{error}</p>
           ) : transactions.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-4">Sin movimientos</p>
+            <p className="text-gray-400 text-sm text-center py-4" data-testid="billetera-empty">Sin movimientos</p>
           ) : (
             <div className="space-y-2">
               {transactions.map((tx) => {
                 const isPositive = tx.amount > 0
                 return (
-                  <div key={tx.id} className="flex items-center gap-3 py-2.5 px-3 rounded-[18px] bg-[#F2F4F9]">
+                  <div key={tx.id} className="flex items-center gap-3 py-2.5 px-3 rounded-[18px] bg-[#F2F4F9]" data-testid={`billetera-transaction-${tx.id}`}>
                     <div className="w-7 h-7 rounded-full flex items-center justify-center bg-white shrink-0 shadow-sm">
                       <TxIcon type={tx.type} />
                     </div>

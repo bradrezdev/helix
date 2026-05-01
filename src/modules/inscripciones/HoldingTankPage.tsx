@@ -29,7 +29,7 @@ function TankSkeleton() {
 
 function EmptyState() {
   return (
-    <div className="text-center py-16">
+    <div className="text-center py-16" data-testid="holding-tank-empty">
       <Users size={52} className="mx-auto mb-4" style={{ color: '#9CA3AF' }} />
       <p className="text-lg font-semibold mb-1.5" style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}>
         No tienes miembros esperando
@@ -46,7 +46,7 @@ function EmptyState() {
 function TankRow({ member }: { member: TankMember }) {
   const isLongWait = member.days_waiting >= 7
   return (
-    <tr className="border-b border-[#EAECF0] hover:bg-[#F2F4F9]/50 transition-colors">
+    <tr className="border-b border-[#EAECF0] hover:bg-[#F2F4F9]/50 transition-colors" data-testid={`holding-tank-row-${member.member_id}`}>
       <td className="py-3.5 px-3">
         <div className="flex items-center gap-3">
           <div
@@ -56,7 +56,7 @@ function TankRow({ member }: { member: TankMember }) {
             {(member.member_name[0] ?? '?').toUpperCase()}
           </div>
           <div>
-            <p className="text-sm font-semibold" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
+          <p className="text-sm font-semibold" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }} data-testid="holding-tank-count">
               {member.member_name}
             </p>
             <p className="text-xs" style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}>
@@ -103,7 +103,7 @@ export default function HoldingTankPage() {
   const isLoadingAll = authLoading || profileLoading
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto" data-testid="holding-tank-container">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
@@ -136,6 +136,7 @@ export default function HoldingTankPage() {
               color: '#0CBCE5',
               fontFamily: 'Poppins, sans-serif',
             }}
+            data-testid="holding-tank-refresh"
           >
             <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
             Actualizar

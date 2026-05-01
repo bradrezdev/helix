@@ -174,6 +174,7 @@ export default function BonoDetail() {
     <div
       className="max-w-[1920px] mx-auto px-4 py-6"
       style={{ fontFamily: 'Poppins, sans-serif' }}
+      data-testid="bono-detail-container"
     >
       {/* ── Back button ── */}
       <button
@@ -200,6 +201,7 @@ export default function BonoDetail() {
         <p
           className="text-2xl font-bold mt-1"
           style={{ color: '#062A63' }}
+          data-testid="bono-detail-total"
         >
           {formatCurrencyMXN(total)}
         </p>
@@ -213,7 +215,7 @@ export default function BonoDetail() {
 
       {/* ── Empty state ── */}
       {(!commissions || commissions.length === 0) && (
-        <div className="bg-white rounded-[24px] shadow-[0_4px_24px_rgba(6,42,99,0.07)] p-8 text-center">
+        <div className="bg-white rounded-[24px] shadow-[0_4px_24px_rgba(6,42,99,0.07)] p-8 text-center" data-testid="bono-detail-empty">
           <p className="text-sm" style={{ color: '#9CA3AF' }}>
             Sin transacciones para este bono
           </p>
@@ -251,6 +253,7 @@ export default function BonoDetail() {
                 key={c.id}
                 className="grid grid-cols-12 px-4 py-2.5 border-b border-[#EAECF0] last:border-0 text-sm gap-x-2 items-center"
                 style={{ color: '#383A3F' }}
+                data-testid={`bono-detail-transaction-${c.id}`}
               >
                 {/* Origen */}
                 <span className="col-span-2 flex items-center gap-1.5 truncate">

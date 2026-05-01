@@ -47,6 +47,7 @@ export default function SocioRow({ socio, isHeader = false }: SocioRowProps) {
       )}
       style={{ fontFamily: 'Poppins, sans-serif' }}
       role="row"
+      data-testid={`socio-row-${socio.user_id}`}
     >
       {/* User ID — cyan monospace */}
       <span className="text-[#0CBCE5] font-mono text-xs" role="cell">

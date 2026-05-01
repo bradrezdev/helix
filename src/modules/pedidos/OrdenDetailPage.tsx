@@ -156,7 +156,7 @@ export function OrdenDetailPage() {
     : 'Sin guía asignada'
 
   return (
-    <main className="min-h-screen pb-28" style={{ backgroundColor: '#F2F4F9' }}>
+    <main className="min-h-screen pb-28" style={{ backgroundColor: '#F2F4F9' }} data-testid="order-detail-container">
       {/* ── Top bar ─────────────────────────────────────────────────────────── */}
       <div className="px-5 pt-8 pb-4 flex items-center gap-3">
         <button
@@ -171,7 +171,7 @@ export function OrdenDetailPage() {
 
       <div className="px-5 space-y-5">
         {/* ── Header ──────────────────────────────────────────────────────── */}
-        <div className="space-y-2">
+        <div className="space-y-2" data-testid="order-detail-header">
           <h1
             className="font-semibold"
             style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif', fontSize: '22px' }}
@@ -234,7 +234,7 @@ export function OrdenDetailPage() {
         <hr className="border-[#EAECF0] my-4" />
 
         {/* ── Envío section ────────────────────────────────────────────────── */}
-        <div className="space-y-3">
+        <div className="space-y-3" data-testid="order-detail-shipping">
           <p
             className="font-semibold"
             style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif', fontSize: '17px' }}
@@ -293,11 +293,12 @@ export function OrdenDetailPage() {
           >
             Productos
           </p>
-          <div className="space-y-3">
+          <div className="space-y-3" data-testid="order-detail-items">
             {items.length === 0 ? (
               <p
                 className="text-sm text-center py-4"
                 style={{ color: 'rgba(6,42,99,0.40)', fontFamily: 'Poppins, sans-serif' }}
+                data-testid="order-detail-empty"
               >
                 No hay artículos en esta orden
               </p>
@@ -356,11 +357,13 @@ export function OrdenDetailPage() {
         {isAdmin && (
           <>
             <hr className="border-[#EAECF0] my-4" />
-            <AuditarSection
-              commissions={commissions}
-              loading={loading}
-              country={order.country}
-            />
+            <div data-testid="order-detail-commissions">
+              <AuditarSection
+                commissions={commissions}
+                loading={loading}
+                country={order.country}
+              />
+            </div>
           </>
         )}
       </div>

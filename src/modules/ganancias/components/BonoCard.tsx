@@ -41,6 +41,7 @@ export default function BonoCard({ group, color, onClick }: BonoCardProps) {
       }}
       className="relative overflow-hidden bg-white rounded-[24px] p-5 shadow-[0_4px_24px_rgba(6,42,99,0.07)] cursor-pointer active:scale-[0.98] transition-transform"
       style={{ fontFamily: 'Poppins, sans-serif' }}
+      data-testid={`bono-card-${group.key}`}
     >
       {/* Left accent bar — colored by bono_type */}
       <div
@@ -82,7 +83,7 @@ export default function BonoCard({ group, color, onClick }: BonoCardProps) {
         </div>
 
         {/* Amount — large, bold, primary color */}
-        <p className="text-2xl font-bold" style={{ color: '#062A63' }}>
+        <p className="text-2xl font-bold" style={{ color: '#062A63' }} data-testid={`bono-amount-${group.key}`}>
           {currency.format(group.total)}
         </p>
 
