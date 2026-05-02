@@ -12,6 +12,8 @@ declare module 'd3-org-chart' {
     buttonContent(fn: (params: { node: { data: TData & { _directSubordinates: number } } }) => string): this
     nodeContent(fn: (node: { data: TData }) => string): this
     onNodeClick(fn: (node: { data: TData }) => void): this
+    compact(value: boolean): this
+    layout(value: 'top' | 'left' | 'right' | 'bottom'): this
     initialZoom(value: number): this
     render(): this
     zoomIn(): this

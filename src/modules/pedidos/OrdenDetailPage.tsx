@@ -71,7 +71,7 @@ export function OrdenDetailPage() {
   const { user } = useAuth()
   const { data: profile } = useProfile(user?.id ?? '')
   const isAdmin = useIsAdmin()
-  const { data, loading, error } = useOrderDetail(orderId, isAdmin)
+  const { data, loading, error } = useOrderDetail(orderId)
 
   // Derive country from order (available after data loads) or fall back to 'MXN'
   const orderCountry = data?.order.country ?? 'MXN'
@@ -353,19 +353,15 @@ export function OrdenDetailPage() {
           </div>
         </div>
 
-        {/* ── Auditar section (admin only) ────────────────────────────────── */}
-        {isAdmin && (
-          <>
-            <hr className="border-[#EAECF0] my-4" />
-            <div data-testid="order-detail-commissions">
-              <AuditarSection
-                commissions={commissions}
-                loading={loading}
-                country={order.country}
-              />
-            </div>
-          </>
-        )}
+        {/* ── Auditar section ──────────────────────────────────────────────── */}
+        <hr className="border-[#EAECF0] my-4" />
+        <div data-testid="order-detail-commissions">
+          <AuditarSection
+            commissions={commissions}
+            loading={loading}
+            country={order.country}
+          />
+        </div>
       </div>
     </main>
   )

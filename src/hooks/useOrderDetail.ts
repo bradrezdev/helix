@@ -204,8 +204,7 @@ async function fetchCommissions(orderId: string): Promise<OrderCommission[]> {
 // ─── Core fetch ───────────────────────────────────────────────────────────────
 
 async function fetchOrderDetail(
-  orderId: string,
-  isAdmin: boolean
+  orderId: string
 ): Promise<OrderDetailData> {
   // Step 1: fetch order — supports both UUID (id) and order code (order_id)
   // UUID pattern: 8-4-4-4-12 hex chars. Everything else is an order code.
@@ -297,7 +296,7 @@ async function fetchOrderDetail(
     fetchProductsCantidad(productCodes),
     fetchShipping(shippingData),
     fetchShipment(resolvedOrderId),
-    isAdmin ? fetchCommissions(resolvedOrderId) : Promise.resolve([]),
+    fetchCommissions(resolvedOrderId),
   ])
 
   const cantidadMap =
@@ -348,16 +347,15 @@ async function fetchOrderDetail(
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useOrderDetail(
-  orderId: string,
-  isAdmin: boolean
+  orderId: string
 ): {
   data: OrderDetailData | null
   loading: boolean
   error: string | null
 } {
   const { data, isLoading, error } = useQuery({
-    queryKey: ['orderDetail', orderId, isAdmin],
-    queryFn: () => fetchOrderDetail(orderId, isAdmin),
+    queryKey: ['orderDetail', orderId],
+    queryFn: () => fetchOrderDetail(orderId),
     enabled: !!orderId,
     staleTime: 1000 * 60 * 2,
   })

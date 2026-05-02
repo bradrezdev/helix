@@ -118,11 +118,11 @@ export function OrgChartTree({ nodes, treeType, onNodeClick }: OrgChartTreeProps
       .data(chartData)
       .nodeWidth(() => 220)
       .nodeHeight(() => 130)
-      .childrenMargin(() => 50)
-      .compactMarginBetween(() => 15)
-      .compactMarginPair(() => 80)
-      .neighbourMargin(() => 20)
-      .siblingsMargin(() => 20)
+      .childrenMargin(() => 80)
+      .neighbourMargin(() => 30)
+      .siblingsMargin(() => 40)
+      .compact(false)
+      .layout('top')
       .buttonContent(({ node }) => {
         const count = (node.data as OrgChartNode & { _directSubordinates?: number })._directSubordinates ?? 0
         return `<div style="border-radius:20px;background:#062A63;color:white;font-size:10px;font-family:Poppins,sans-serif;font-weight:600;padding:3px 10px;cursor:pointer;">${count} ▾</div>`
