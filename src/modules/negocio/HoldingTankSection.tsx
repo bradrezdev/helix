@@ -12,8 +12,8 @@ interface HoldingMember {
   member_id: string
   entered_at: string
   users: {
-    nombre: string
-    apellido: string
+    name: string
+    apellidos: string
     email: string
     personal_pv: number
   } | null
@@ -21,8 +21,8 @@ interface HoldingMember {
 
 interface NetworkNode {
   id: string
-  nombre: string
-  apellido: string
+  name: string
+  apellidos: string
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -72,7 +72,7 @@ function PlaceModal({ member, onClose, onSuccess }: PlaceModalProps) {
 
         const { data: usersData, error: usersErr } = await supabase
           .from('users')
-          .select('id, nombre, apellido')
+          .select('id, name, apellidos')
           .in('id', allIds)
 
         if (usersErr) throw usersErr
@@ -97,7 +97,7 @@ function PlaceModal({ member, onClose, onSuccess }: PlaceModalProps) {
     } else {
       setFiltered(
         nodes.filter((n) =>
-          `${n.nombre} ${n.apellido}`.toLowerCase().includes(q)
+          `${n.name} ${n.apellidos}`.toLowerCase().includes(q)
         )
       )
     }
@@ -117,7 +117,7 @@ function PlaceModal({ member, onClose, onSuccess }: PlaceModalProps) {
       const result = data as { success?: boolean } | null
       if (result?.success === false) throw new Error('Placement failed')
 
-      toast.success(`${member.users?.nombre ?? 'Usuario'} colocado bajo ${selected.nombre} ${selected.apellido}`)
+      toast.success(`${member.users?.name ?? 'Usuario'} colocado bajo ${selected.name} ${selected.apellidos}`)
       onSuccess(member.member_id)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al colocar usuario'
@@ -128,7 +128,7 @@ function PlaceModal({ member, onClose, onSuccess }: PlaceModalProps) {
   }
 
   const memberName = member.users
-    ? `${member.users.nombre} ${member.users.apellido}`
+    ? `${member.users.name} ${member.users.apellidos}`
     : member.member_id
 
   return (
@@ -195,11 +195,11 @@ function PlaceModal({ member, onClose, onSuccess }: PlaceModalProps) {
               >
                 <div className="w-8 h-8 rounded-full bg-[#EFF6FF] flex items-center justify-center shrink-0">
                   <span className="text-xs font-semibold text-[#062A63]">
-                    {node.nombre.charAt(0)}{node.apellido.charAt(0)}
+                    {node.name.charAt(0)}{node.apellidos.charAt(0)}
                   </span>
                 </div>
                 <span className="text-sm font-medium text-[#383A3F]">
-                  {node.nombre} {node.apellido}
+                  {node.name} {node.apellidos}
                 </span>
                 {selected?.id === node.id && (
                   <UserCheck size={16} className="ml-auto text-[#0CBCE5]" />
@@ -220,7 +220,7 @@ function PlaceModal({ member, onClose, onSuccess }: PlaceModalProps) {
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'
           )}
         >
-          {placing ? 'Colocando...' : selected ? `Colocar bajo ${selected.nombre}` : 'Selecciona un nodo'}
+          {placing ? 'Colocando...' : selected ? `Colocar bajo ${selected.name}` : 'Selecciona un nodo'}
         </button>
       </div>
     </div>
@@ -250,7 +250,7 @@ export function HoldingTankSection({ holdingTankCount }: HoldingTankSectionProps
       try {
         const { data, error: fetchErr } = await supabase
           .from('holding_tank')
-          .select('id, member_id, entered_at, users!member_id(nombre, apellido, email, personal_pv)')
+          .select('id, member_id, entered_at, users!member_id(name, apellidos, email, personal_pv)')
           .eq('sponsor_id', user!.id)
           .order('entered_at', { ascending: false })
 
@@ -334,7 +334,7 @@ export function HoldingTankSection({ holdingTankCount }: HoldingTankSectionProps
               <div className="px-5 py-4 space-y-3">
                 {members.map((member) => {
                   const name = member.users
-                    ? `${member.users.nombre} ${member.users.apellido}`
+                    ? `${member.users.name} ${member.users.apellidos}`
                     : member.member_id
                   const pv = member.users?.personal_pv ?? 0
                   const email = member.users?.email ?? ''
@@ -347,7 +347,7 @@ export function HoldingTankSection({ holdingTankCount }: HoldingTankSectionProps
                       {/* Avatar */}
                       <div className="w-10 h-10 rounded-full bg-[#EFF6FF] border border-[#EAECF0] flex items-center justify-center shrink-0">
                         <span className="text-sm font-semibold text-[#062A63]">
-                          {member.users ? `${member.users.nombre.charAt(0)}${member.users.apellido.charAt(0)}` : '?'}
+                          {member.users ? `${member.users.name.charAt(0)}${member.users.apellidos.charAt(0)}` : '?'}
                         </span>
                       </div>
 

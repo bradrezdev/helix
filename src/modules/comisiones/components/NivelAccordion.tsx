@@ -5,7 +5,7 @@
 
 import { ChevronDown } from 'lucide-react'
 import { cn } from '../../../lib/utils'
-import { formatAmount } from '../../../lib/formatters'
+
 import SocioRow from './SocioRow'
 import type { ComisionNivel } from '../../../hooks/useComisionesNivel'
 import type { SocioNivel } from '../../../hooks/useSociosNivel'
@@ -70,9 +70,9 @@ export default function NivelAccordion({
             —
           </span>
 
-          {/* CV total — currency */}
+          {/* CV total — volumen */}
           <span className="text-[#383A3F]">
-            CV: {formatAmount(nivel.total_cv, 'MXN')}
+            CV: {nivel.total_cv.toLocaleString('es-MX')}
           </span>
         </div>
 

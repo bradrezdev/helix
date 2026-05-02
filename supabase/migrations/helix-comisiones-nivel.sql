@@ -90,14 +90,14 @@ BEGIN
   RETURN QUERY
   SELECT
     c.source_user_id,
-    u.user_id,
-    u.name,
-    u.apellidos,
+    COALESCE(u.user_id, 0)::int AS user_id,
+    COALESCE(u.name, 'Usuario desconocido') AS name,
+    COALESCE(u.apellidos, '') AS apellidos,
     COALESCE(u.personal_pv, 0)::numeric AS pv,
     COALESCE(u.personal_cv, 0)::numeric AS cv,
     COALESCE(SUM(c.amount), 0)::numeric AS amount
   FROM public.commissions c
-  JOIN public.users u ON u.id = c.source_user_id
+  LEFT JOIN public.users u ON u.id = c.source_user_id
   WHERE c.user_id = v_uid
     AND c.level = p_level
     AND c.bono_type IN ('unilevel', 'infinito_unilevel')

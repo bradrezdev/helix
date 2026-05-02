@@ -17,6 +17,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../../hooks/useAuth'
 import { useProfile } from '../../../hooks/useProfile'
 import { supabase } from '../../../lib/supabase'
+import { BONO_TYPE_LABELS } from '../../../lib/formatters'
 import { getBonoColor } from '../constants'
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
@@ -45,14 +46,7 @@ interface CommissionDetail {
 
 // ─── Bonus type display labels ──────────────────────────────────────────────────
 
-const BONO_LABELS: Record<string, string> = {
-  unilevel: 'Unilevel',
-  binario: 'Binario',
-  matching: 'Matching',
-  fast_start: 'Fast Start',
-  liderazgo: 'Liderazgo',
-  residual: 'Residual',
-}
+const BONO_LABELS = BONO_TYPE_LABELS
 
 // ─── Format helpers ─────────────────────────────────────────────────────────────
 

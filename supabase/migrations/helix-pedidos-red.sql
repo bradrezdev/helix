@@ -53,8 +53,6 @@ BEGIN
   WITH descendants AS (
     SELECT d.user_id, d.level AS tree_level
     FROM get_unilevel_downline(p_root_id, 99) d
-    UNION ALL
-    SELECT p_root_id, 0  -- include the root user themselves
   ),
   filtered_orders AS (
     SELECT

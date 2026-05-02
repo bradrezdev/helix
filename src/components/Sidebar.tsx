@@ -16,6 +16,11 @@ import {
   PanelLeftOpen,
   ChevronDown,
   DollarSign,
+  Store,
+  ShoppingCart,
+  Package,
+  CreditCard,
+  MapPin,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useAuth } from '../hooks/useAuth'
@@ -39,6 +44,9 @@ interface SidebarMenuGroupProps {
   label: string
   children: React.ReactNode
   collapsed?: boolean
+  expanded: boolean
+  onToggle: () => void
+  childRoutes: string[]
 }
 
 // ─── SidebarMenuItem ───────────────────────────────────────────────────────────
@@ -104,25 +112,28 @@ function SidebarMenuItem({
  * (any child route matches the current path).
  */
 const NEGOCIO_CHILD_ROUTES = ['/network', '/historial-volumen', '/ganancias', '/comisiones', '/inscripciones']
+const TIENDA_CHILD_ROUTES = ['/tienda', '/ordenes']
 
 function SidebarMenuGroup({
   icon: Icon,
   label,
   children,
   collapsed = false,
+  expanded,
+  onToggle,
+  childRoutes,
 }: SidebarMenuGroupProps) {
   const location = useLocation()
-  const { negocioExpanded, toggleNegocio } = useLayoutStore()
 
-  const isChildActive = NEGOCIO_CHILD_ROUTES.some((route) =>
+  const isChildActive = childRoutes.some((route) =>
     location.pathname.startsWith(route),
   )
-  const expanded = negocioExpanded && !collapsed
+  const isOpen = expanded && !collapsed
 
   const handleToggle = () => {
     // Collapsed sidebar — clicking does nothing (user must expand first)
     if (collapsed) return
-    toggleNegocio()
+    onToggle()
   }
 
   return (
@@ -163,7 +174,7 @@ function SidebarMenuGroup({
               size={14}
               className={cn(
                 'transition-transform duration-200',
-                expanded && 'rotate-180',
+                isOpen && 'rotate-180',
               )}
               style={{ color: '#9CA3AF' }}
             />
@@ -176,7 +187,7 @@ function SidebarMenuGroup({
         <div
           className={cn(
             'overflow-hidden transition-all duration-200',
-            expanded ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0',
+            isOpen ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0',
           )}
         >
           <div className="pt-1">{children}</div>
@@ -197,7 +208,7 @@ export function Sidebar() {
 
   const { user } = useAuth()
   const { profile, loading: profileLoading } = useProfile(user?.id ?? '')
-  const { sidebarCollapsed, toggleSidebar } = useLayoutStore()
+  const { sidebarCollapsed, toggleSidebar, negocioExpanded, toggleNegocio, tiendaExpanded, toggleTienda } = useLayoutStore()
 
   // Construct "Nuevo registro" URL with sponsor query param
   const registerTo = profile?.user_id
@@ -260,6 +271,9 @@ export function Sidebar() {
           icon={Building2}
           label="Negocio"
           collapsed={sidebarCollapsed}
+          expanded={negocioExpanded}
+          onToggle={toggleNegocio}
+          childRoutes={NEGOCIO_CHILD_ROUTES}
         >
           <SidebarMenuItem
             icon={Network}
@@ -305,6 +319,45 @@ export function Sidebar() {
           to={registerTo}
           collapsed={sidebarCollapsed}
         />
+
+        {/* Tienda — dropdown group */}
+        <SidebarMenuGroup
+          icon={Store}
+          label="Tienda"
+          collapsed={sidebarCollapsed}
+          expanded={tiendaExpanded}
+          onToggle={toggleTienda}
+          childRoutes={TIENDA_CHILD_ROUTES}
+        >
+          <SidebarMenuItem
+            icon={ShoppingCart}
+            label="Comprar productos"
+            to="/tienda"
+            indent
+            collapsed={sidebarCollapsed}
+          />
+          <SidebarMenuItem
+            icon={Package}
+            label="Órdenes"
+            to="/ordenes"
+            indent
+            collapsed={sidebarCollapsed}
+          />
+          <SidebarMenuItem
+            icon={CreditCard}
+            label="Métodos de pago"
+            to="/tienda/metodos-pago"
+            indent
+            collapsed={sidebarCollapsed}
+          />
+          <SidebarMenuItem
+            icon={MapPin}
+            label="Direcciones de envío"
+            to="/tienda/direcciones"
+            indent
+            collapsed={sidebarCollapsed}
+          />
+        </SidebarMenuGroup>
 
         {/* Billetera */}
         <SidebarMenuItem

@@ -15,6 +15,8 @@ import { NegocioPage } from '../modules/negocio/NegocioPage'
 import { PedidosPage } from '../modules/pedidos/PedidosPage'
 import { TiendaPage } from '../modules/tienda/TiendaPage'
 import { CheckoutPage } from '../modules/tienda/CheckoutPage'
+import { AddressesPage } from '../modules/tienda/AddressesPage'
+import { PaymentMethodsPage } from '../modules/tienda/PaymentMethodsPage'
 import { AdminPage } from '../modules/admin/AdminPage'
 import { AdminOrdersPage } from '../modules/admin/AdminOrdersPage'
 import { AdminGuard } from '../components/AdminGuard'
@@ -129,6 +131,18 @@ const checkoutRoute = createRoute({
   component: CheckoutPage,
 })
 
+const paymentMethodsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/tienda/metodos-pago',
+  component: PaymentMethodsPage,
+})
+
+const addressesRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/tienda/direcciones',
+  component: AddressesPage,
+})
+
 const adminRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/admin',
@@ -226,6 +240,8 @@ const routeTree = rootRoute.addChildren([
     ordenDetailRoute,
     tiendaRoute,
     checkoutRoute,
+    paymentMethodsRoute,
+    addressesRoute,
     registerRoute,
     adminRoute,
     adminOrdenesRoute,

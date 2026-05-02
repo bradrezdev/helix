@@ -37,7 +37,7 @@ export default function SocioRow({ socio, isHeader = false }: SocioRowProps) {
     )
   }
 
-  const fullName = [socio.name, socio.apellidos].filter(Boolean).join(' ')
+  const fullName = [socio.name, socio.apellidos].filter(Boolean).join(' ') || 'Usuario desconocido'
 
   return (
     <div
@@ -64,9 +64,9 @@ export default function SocioRow({ socio, isHeader = false }: SocioRowProps) {
         {socio.pv.toLocaleString('es-MX')}
       </span>
 
-      {/* CV — MXN currency */}
+      {/* CV — volumen */}
       <span className="text-sm text-[#383A3F]" role="cell">
-        {formatAmount(socio.cv, 'MXN')}
+        {socio.cv.toLocaleString('es-MX')}
       </span>
 
       {/* Comisión — bold primary */}

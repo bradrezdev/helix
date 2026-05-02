@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { Users, Clock, RefreshCw } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { useProfile } from '../../hooks/useProfile'
 import { useHoldingTank, type TankMember } from '../../hooks/useHoldingTank'
+import { PlaceMemberModal } from '../../components/PlaceMemberModal'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -43,7 +45,7 @@ function EmptyState() {
 
 // ─── Table Row ────────────────────────────────────────────────────────────────
 
-function TankRow({ member }: { member: TankMember }) {
+function TankRow({ member, onPlace }: { member: TankMember; onPlace: (m: TankMember) => void }) {
   const isLongWait = member.days_waiting >= 7
   return (
     <tr className="border-b border-[#EAECF0] hover:bg-[#F2F4F9]/50 transition-colors" data-testid={`holding-tank-row-${member.member_id}`}>
@@ -84,13 +86,22 @@ function TankRow({ member }: { member: TankMember }) {
           {member.days_waiting} día{member.days_waiting !== 1 ? 's' : ''}
         </span>
       </td>
+      <td className="py-3.5 px-3">
+        <button
+          onClick={() => onPlace(member)}
+          className="shrink-0 px-4 py-2 rounded-full text-xs font-semibold bg-[#062A63] text-white hover:bg-[#0A3A8A] active:scale-95 transition-all"
+          data-testid={`holding-tank-place-${member.member_id}`}
+        >
+          Colocar
+        </button>
+      </td>
     </tr>
   )
 }
 
 // ─── Empty Row (mobile card fallback inside table) ─────────────────────────────
 
-const TABLE_HEADERS = ['Miembro', 'Email', 'Ingresó', 'Espera']
+const TABLE_HEADERS = ['Miembro', 'Email', 'Ingresó', 'Espera', 'Acciones']
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -101,6 +112,7 @@ export default function HoldingTankPage() {
   const { data: members, isLoading, refetch } = useHoldingTank(userId, profile?.is_admin === true)
 
   const isLoadingAll = authLoading || profileLoading
+  const [selectedMember, setSelectedMember] = useState<TankMember | null>(null)
 
   return (
     <div className="max-w-4xl mx-auto" data-testid="holding-tank-container">
@@ -166,13 +178,26 @@ export default function HoldingTankPage() {
               </thead>
               <tbody>
                 {members.map(m => (
-                  <TankRow key={m.member_id} member={m} />
+                  <TankRow key={m.member_id} member={m} onPlace={setSelectedMember} />
                 ))}
               </tbody>
             </table>
           </div>
         )}
       </div>
+
+      {/* Place Member Modal */}
+      {selectedMember && (
+        <PlaceMemberModal
+          member={selectedMember}
+          userId={userId}
+          onClose={() => setSelectedMember(null)}
+          onSuccess={() => {
+            setSelectedMember(null)
+            refetch()
+          }}
+        />
+      )}
 
       {/* Admin note */}
       {profile?.is_admin && (

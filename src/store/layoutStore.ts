@@ -10,6 +10,8 @@ interface LayoutState {
   sidebarCollapsed: boolean
   /** Whether the "Negocio" submenu in the sidebar is expanded */
   negocioExpanded: boolean
+  /** Whether the "Tienda" submenu in the sidebar is expanded */
+  tiendaExpanded: boolean
   /** Toggle sidebar collapsed state */
   toggleSidebar: () => void
   /** Explicitly set sidebar collapsed state */
@@ -18,6 +20,10 @@ interface LayoutState {
   toggleNegocio: () => void
   /** Explicitly set Negocio submenu expanded state */
   setNegocioExpanded: (v: boolean) => void
+  /** Toggle Tienda submenu expanded state */
+  toggleTienda: () => void
+  /** Explicitly set Tienda submenu expanded state */
+  setTiendaExpanded: (v: boolean) => void
 }
 
 export const useLayoutStore = create<LayoutState>()(
@@ -25,6 +31,7 @@ export const useLayoutStore = create<LayoutState>()(
     (set) => ({
       sidebarCollapsed: false,
       negocioExpanded: false,
+      tiendaExpanded: false,
 
       toggleSidebar: () =>
         set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
@@ -35,6 +42,11 @@ export const useLayoutStore = create<LayoutState>()(
         set((s) => ({ negocioExpanded: !s.negocioExpanded })),
 
       setNegocioExpanded: (v) => set({ negocioExpanded: v }),
+
+      toggleTienda: () =>
+        set((s) => ({ tiendaExpanded: !s.tiendaExpanded })),
+
+      setTiendaExpanded: (v) => set({ tiendaExpanded: v }),
     }),
     { name: 'helix-layout' }
   )
