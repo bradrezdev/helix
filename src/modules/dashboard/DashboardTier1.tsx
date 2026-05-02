@@ -7,6 +7,7 @@ import { useDashboard } from '../../hooks/useDashboard'
 import { useLegVolumes } from '../../hooks/useNegocio'
 import { TIER_1_RANKS, TIER_2_RANKS } from '../../hooks/useTier'
 import type { UserProfile } from '../../hooks/useProfile'
+import { RANK_PV_THRESHOLDS, RANK_ORDER, getNextRank } from '../../lib/ranks'
 import { StatCard } from '../../components/dashboard/widgets/StatCard'
 import { NetworkCard } from '../../components/dashboard/widgets/NetworkCard'
 import { ProgressRankCard } from '../../components/dashboard/widgets/ProgressRankCard'
@@ -16,47 +17,11 @@ import { TopConsumersCard } from '../../components/dashboard/widgets/TopConsumer
 import { FirstVsRepurchaseCard } from '../../components/dashboard/widgets/FirstVsRepurchaseCard'
 import { DashboardPageSkeleton } from '../../components/dashboard/widgets/WidgetSkeleton'
 
-// ─── RANK_PV_THRESHOLDS ───────────────────────────────────────────────────────
-// Minimum PV required to reach each rank.
-export const RANK_PV_THRESHOLDS: Record<string, number> = {
-  'Socio': 0,
-  'Bronce': 100,
-  'Plata': 300,
-  'Oro': 600,
-  'Platino': 1000,
-  'Diamante': 2000,
-  'Doble Diamante': 4000,
-  'Triple Diamante': 7000,
-  'Diamante Embajador': 10000,
-  'Doble Diamante Embajador': 15000,
-  'Triple Diamante Embajador': 20000,
-}
-
-const RANK_ORDER = [
-  'Socio',
-  'Bronce',
-  'Plata',
-  'Oro',
-  'Platino',
-  'Diamante',
-  'Doble Diamante',
-  'Triple Diamante',
-  'Diamante Embajador',
-  'Doble Diamante Embajador',
-  'Triple Diamante Embajador',
-]
-
-function getNextRank(rank: string): string | null {
-  const idx = RANK_ORDER.indexOf(rank)
-  if (idx === -1 || idx === RANK_ORDER.length - 1) return null
-  return RANK_ORDER[idx + 1]
-}
-
 function getRankProgress(rank: string, personalPv: number): number {
   const currentThreshold = RANK_PV_THRESHOLDS[rank] ?? 0
-  const nextRank = getNextRank(rank)
-  if (!nextRank) return 100
-  const nextThreshold = RANK_PV_THRESHOLDS[nextRank] ?? currentThreshold
+  const nextRankSlug = getNextRank(rank)
+  if (!nextRankSlug) return 100
+  const nextThreshold = RANK_PV_THRESHOLDS[nextRankSlug] ?? currentThreshold
   if (nextThreshold <= currentThreshold) return 100
   const progress = ((personalPv - currentThreshold) / (nextThreshold - currentThreshold)) * 100
   return Math.min(100, Math.max(0, progress))

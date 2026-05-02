@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 import { OrgChart } from 'd3-org-chart'
 import type { NetworkNode } from './NetworkNode'
 import { getInitial } from './NetworkNode'
+import { RANK_IMAGES } from '../../lib/ranks'
 
 interface OrgChartNode {
   id: string
@@ -14,16 +15,6 @@ interface OrgChartNode {
   personalPv: number
   groupVg: number
   kitType: string | null
-}
-
-const RANK_IMAGES: Record<string, string> = {
-  Bronce: '/rangos/bronce.png',
-  Plata: '/rangos/plata.png',
-  Oro: '/rangos/oro.png',
-  Platino: '/rangos/platino.png',
-  Diamante: '/rangos/diamond.png',
-  'Doble Diamante': '/rangos/double-diamond.png',
-  'Triple Diamante': '/rangos/triple-diamond.png',
 }
 
 function getMembershipLabel(node: OrgChartNode): string {

@@ -13,26 +13,28 @@ interface SimConfig {
   cvPorPersona: number    // avg CV per person
 }
 
-type Rank = 'Bronce' | 'Plata' | 'Oro' | 'Platino' | 'Diamante' | 'Doble Diamante' | 'Triple Diamante' | 'Diamante Embajador' | 'Doble Diamante Embajador' | 'Triple Diamante Embajador'
+type Rank = 'Ejecutivo' | 'Bronce' | 'Plata' | 'Oro' | 'Platino' | 'Diamante' | 'Doble Diamante' | 'Triple Diamante' | 'Diamante Embajador' | 'Doble Diamante Embajador' | 'Triple Diamante Embajador'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-// Rank requirements: [personal VG, group VG] - based on VG total in organization
+// Rank requirements: [personal PV, group VG] - based on PV + VG requirements
 const RANK_REQUIREMENTS: Record<Rank, [number, number]> = {
-  Bronce: [0, 1000],
-  Plata: [0, 3000],
-  Oro: [0, 5000],
-  Platino: [0, 10000],
-  Diamante: [0, 25000],
-  'Doble Diamante': [0, 50000],
-  'Triple Diamante': [0, 100000],
-  'Diamante Embajador': [0, 250000],
-  'Doble Diamante Embajador': [0, 500000],
-  'Triple Diamante Embajador': [0, 1000000],
+  Ejecutivo: [100, 0],
+  Bronce: [100, 1000],
+  Plata: [100, 3000],
+  Oro: [100, 5000],
+  Platino: [100, 10000],
+  Diamante: [100, 25000],
+  'Doble Diamante': [100, 50000],
+  'Triple Diamante': [100, 100000],
+  'Diamante Embajador': [100, 250000],
+  'Doble Diamante Embajador': [100, 500000],
+  'Triple Diamante Embajador': [100, 1000000],
 }
 
 // Get rank options ordered from lowest to highest
 const RANK_OPTIONS: Rank[] = [
+  'Ejecutivo',
   'Bronce',
   'Plata',
   'Oro',
@@ -47,7 +49,7 @@ const RANK_OPTIONS: Rank[] = [
 
 // Calculate achievable rank based on network VG
 function calculateAchievableRank(vgTotal: number): Rank {
-  let achievable: Rank = 'Bronce'
+  let achievable: Rank = 'Ejecutivo'
   for (const rank of RANK_OPTIONS) {
     const [, groupVG] = RANK_REQUIREMENTS[rank]
     if (vgTotal >= groupVG) {
@@ -65,6 +67,7 @@ const PATROCINIO_PCT = { L1: 0.25, L2: 0.15, L3: 0.05 }
 
 // Match bonus by rank: pct_n1 through pct_n5
 const MATCH_BONUS: Record<Rank, number[]> = {
+  Ejecutivo: [],
   Bronce: [],
   Plata: [0.05],
   Oro: [0.10],
@@ -81,6 +84,7 @@ const MATCH_BONUS: Record<Rank, number[]> = {
 // Differential bonus: beneficiary earns their rank % MINUS the highest rank % found
 // in that descendant branch (if no ranked person below → earns full %)
 const INFINITO_PATROCINIO: Record<Rank, number> = {
+  Ejecutivo: 0,
   Bronce: 0,
   Plata: 0.07,
   Oro: 0.08,
@@ -95,6 +99,7 @@ const INFINITO_PATROCINIO: Record<Rank, number> = {
 
 // Infinito Uninivel (level 10+) by rank
 const INFINITO_UNILEVEL: Record<Rank, number> = {
+  Ejecutivo: 0,
   Bronce: 0,
   Plata: 0,
   Oro: 0,

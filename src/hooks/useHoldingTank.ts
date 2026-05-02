@@ -11,11 +11,11 @@ export interface TankMember {
   days_waiting: number
 }
 
-export function useHoldingTank(userId: string | undefined, isAdmin: boolean) {
+export function useHoldingTank(userId: string | undefined) {
   return useQuery({
     queryKey: ['holding-tank', userId],
     queryFn: async () => {
-      let query = supabase
+      const { data } = await supabase
         .from('holding_tank')
         .select(`
           member_id,
@@ -23,13 +23,9 @@ export function useHoldingTank(userId: string | undefined, isAdmin: boolean) {
           entered_at,
           member:users!holding_tank_member_id_fkey(user_id, name, email)
         `)
+        .eq('sponsor_id', userId!)
         .order('entered_at', { ascending: true })
 
-      if (!isAdmin) {
-        query = query.eq('sponsor_id', userId!)
-      }
-
-      const { data } = await query
       return ((data ?? []) as any[]).map(r => ({
         member_id: r.member_id,
         member_name: r.member?.name ?? '—',

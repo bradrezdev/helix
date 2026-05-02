@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Users, Clock, RefreshCw } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
-import { useProfile } from '../../hooks/useProfile'
 import { useHoldingTank, type TankMember } from '../../hooks/useHoldingTank'
 import { PlaceMemberModal } from '../../components/PlaceMemberModal'
 
@@ -108,10 +107,9 @@ const TABLE_HEADERS = ['Miembro', 'Email', 'Ingresó', 'Espera', 'Acciones']
 export default function HoldingTankPage() {
   const { user, loading: authLoading } = useAuth()
   const userId = user?.id ?? ''
-  const { profile, loading: profileLoading } = useProfile(userId)
-  const { data: members, isLoading, refetch } = useHoldingTank(userId, profile?.is_admin === true)
+  const { data: members, isLoading, refetch } = useHoldingTank(userId)
 
-  const isLoadingAll = authLoading || profileLoading
+  const isLoadingAll = authLoading || isLoading
   const [selectedMember, setSelectedMember] = useState<TankMember | null>(null)
 
   return (
@@ -199,23 +197,6 @@ export default function HoldingTankPage() {
         />
       )}
 
-      {/* Admin note */}
-      {profile?.is_admin && (
-        <div
-          className="mt-4 rounded-[18px] p-4 text-sm"
-          style={{
-            background: 'rgba(12,188,229,0.08)',
-            border: '1px solid rgba(12,188,229,0.20)',
-            color: '#062A63',
-            fontFamily: 'Poppins, sans-serif',
-          }}
-        >
-          <p className="font-semibold mb-1">Vista completa (admin)</p>
-          <p className="text-xs" style={{ color: '#383A3F' }}>
-            Estás viendo todos los miembros del holding tank. Usa el panel de Administración para colocar usuarios individualmente.
-          </p>
-        </div>
-      )}
     </div>
   )
 }

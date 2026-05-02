@@ -8,16 +8,7 @@ import { cn } from '../../lib/utils'
 import { useAuth } from '../../hooks/useAuth'
 import { useProfile } from '../../hooks/useProfile'
 import { supabase } from '../../lib/supabase'
-
-const RANK_IMAGES: Record<string, string> = {
-  Bronce: '/rangos/bronce.png',
-  Plata: '/rangos/plata.png',
-  Oro: '/rangos/oro.png',
-  Platino: '/rangos/platino.png',
-  Diamante: '/rangos/diamond.png',
-  'Doble Diamante': '/rangos/double-diamond.png',
-  'Triple Diamante': '/rangos/triple-diamond.png',
-}
+import { RANK_IMAGES } from '../../lib/ranks'
 
 function getMembershipLabel(node: NetworkNode): string {
   if (node.kitType === 'cliente_preferente') return 'Cliente Preferente'

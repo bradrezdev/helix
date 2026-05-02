@@ -4,16 +4,7 @@ import { OrgChartTree } from '../network/OrgChartTree'
 import { useUnivelTree, useSponsorTree, useNetworkStats } from '../network/useNetwork'
 import type { NetworkNode, TreeType } from '../network/NetworkNode'
 import { cn } from '../../lib/utils'
-
-const RANK_IMAGES: Record<string, string> = {
-  Bronce: '/rangos/bronce.png',
-  Plata: '/rangos/plata.png',
-  Oro: '/rangos/oro.png',
-  Platino: '/rangos/platino.png',
-  Diamante: '/rangos/diamond.png',
-  'Doble Diamante': '/rangos/double-diamond.png',
-  'Triple Diamante': '/rangos/triple-diamond.png',
-}
+import { RANK_IMAGES } from '../../lib/ranks'
 
 function getMembershipLabel(node: NetworkNode): string {
   if (node.kitType === 'cliente_preferente') return 'Cliente Preferente'

@@ -3,27 +3,7 @@
 // Requirements sourced from plan-de-compensacion/avance-de-rango.md
 
 import { WidgetSkeleton } from './WidgetSkeleton'
-
-// Real rank requirements from ONANO compensation plan (avance-de-rango.md)
-export const RANK_REQUIREMENTS: Record<string, {
-  pv: number
-  groupVg?: number
-  longestLeg?: number
-  shortestLeg?: number
-}> = {
-  'Socio':                       { pv: 0 },
-  'Ejecutivo':                   { pv: 100 },
-  'Bronce':                      { pv: 100, groupVg: 1000 },
-  'Plata':                       { pv: 100, groupVg: 3000,   longestLeg: 1800,  shortestLeg: 1200 },
-  'Oro':                         { pv: 100, groupVg: 5000,   longestLeg: 3000,  shortestLeg: 2000 },
-  'Platino':                     { pv: 100, groupVg: 10000,  longestLeg: 6000,  shortestLeg: 4000 },
-  'Diamante':                    { pv: 100, groupVg: 25000,  longestLeg: 15000, shortestLeg: 10000 },
-  'Doble Diamante':              { pv: 100, groupVg: 50000,  longestLeg: 30000, shortestLeg: 20000 },
-  'Triple Diamante':             { pv: 100, groupVg: 100000, longestLeg: 60000, shortestLeg: 40000 },
-  'Diamante Embajador':          { pv: 100, groupVg: 250000, longestLeg: 150000, shortestLeg: 100000 },
-  'Doble Diamante Embajador':    { pv: 100, groupVg: 500000, longestLeg: 300000, shortestLeg: 200000 },
-  'Triple Diamante Embajador':   { pv: 100, groupVg: 1000000, longestLeg: 600000, shortestLeg: 400000 },
-}
+import { RANK_REQUIREMENTS } from '../../../lib/ranks'
 
 interface ProgressRankCardProps {
   currentRank: string
