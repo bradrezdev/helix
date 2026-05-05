@@ -18,19 +18,11 @@ import { TopConsumersCard } from '../../components/dashboard/widgets/TopConsumer
 import { TopRecruitersCard } from '../../components/dashboard/widgets/TopRecruitersCard'
 import { FirstVsRepurchaseCard } from '../../components/dashboard/widgets/FirstVsRepurchaseCard'
 import { EarningsCard } from '../../components/dashboard/widgets/EarningsCard'
-import { RANK_PV_THRESHOLDS } from './DashboardTier1'
-
-const RANK_ORDER = [
-  'Socio', 'Bronce', 'Plata', 'Oro', 'Platino', 'Diamante',
-  'Doble Diamante', 'Triple Diamante', 'Diamante Embajador',
-  'Doble Diamante Embajador', 'Triple Diamante Embajador',
-]
-
-function getNextRank(rank: string): string | null {
-  const idx = RANK_ORDER.indexOf(rank)
-  if (idx === -1 || idx === RANK_ORDER.length - 1) return null
-  return RANK_ORDER[idx + 1]
-}
+import {
+  RANK_PV_THRESHOLDS,
+  RANK_ORDER,
+  getNextRank,
+} from '../../lib/ranks'
 
 function getRankProgress(rank: string, personalPv: number): number {
   const currentThreshold = RANK_PV_THRESHOLDS[rank] ?? 0

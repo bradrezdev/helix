@@ -22,22 +22,14 @@ import { TopRecruitersCard } from '../../components/dashboard/widgets/TopRecruit
 import { FirstVsRepurchaseCard } from '../../components/dashboard/widgets/FirstVsRepurchaseCard'
 import { EarningsCard } from '../../components/dashboard/widgets/EarningsCard'
 import { formatAmount } from '../../lib/formatters'
-import { RANK_PV_THRESHOLDS } from './DashboardTier1'
+import {
+  RANK_PV_THRESHOLDS,
+  RANK_ORDER,
+  getNextRank,
+} from '../../lib/ranks'
 
 // ─── Zod schema for rank_distribution ────────────────────────────────────────
 const RankDistributionSchema = z.record(z.string(), z.number())
-
-const RANK_ORDER = [
-  'Socio', 'Bronce', 'Plata', 'Oro', 'Platino', 'Diamante',
-  'Doble Diamante', 'Triple Diamante', 'Diamante Embajador',
-  'Doble Diamante Embajador', 'Triple Diamante Embajador',
-]
-
-function getNextRank(rank: string): string | null {
-  const idx = RANK_ORDER.indexOf(rank)
-  if (idx === -1 || idx === RANK_ORDER.length - 1) return null
-  return RANK_ORDER[idx + 1]
-}
 
 function getRankProgress(rank: string, personalPv: number): number {
   const currentThreshold = RANK_PV_THRESHOLDS[rank] ?? 0
