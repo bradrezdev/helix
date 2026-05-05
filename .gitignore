@@ -1,32 +1,88 @@
-# Build
-dist
-dist-ssr
+# === Reflex & Next.js (Frontend Interno) ===
+.web/
+.next/
+out/
+assets/pynecone.css
+*.db
+*.db-journal
 
-# Node
-node_modules
-*.local
-
-# Test
-test-results
-
-# Logs
+# === Logs & Debugging ===
 logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-.idea
-.vscode
+lerna-debug.log*
+
+# === Dependencias y Build (React/Node/Python) ===
+node_modules/
+dist/
+dist-ssr/
+build/
+bin/
+obj/
+*.local
+
+# === Python (Backend & General) ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+develop-eggs/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# === Entornos Virtuales (VENV) ===
+.venv/
+venv/
+ENV/
+env/
+
+# === Jupyter Lab / Notebooks ===
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+# .ipynb  # Descomenta si solo quieres guardar scripts y no el notebook visual
+
+# === Datasets & Data Storage (IMPORTANTE) ===
+# Evita subir archivos pesados que bloqueen el repo
+data/
+datasets/
+raw_data/
+processed_data/
+*.csv
+*.json
+*.parquet
+*.h5
+*.pickle
+*.pkl
+# !data/sample.csv  # Ejemplo: para permitir un archivo pequeño específico
+
+# === Variables de Entorno y Secretos ===
+.env
+.env.local
+.env.*.local
+secrets.toml
+
+# === Editor & OS Specific ===
+.vscode/*
+!.vscode/extensions.json
+.idea/
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-
-# Environment
-.env
-.env.local
-.env.*.local
-.env.example
+.*
