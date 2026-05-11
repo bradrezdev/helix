@@ -4,7 +4,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { ChevronDown } from 'lucide-react'
-import { getLastNMonths, MONTH_FULL_ES } from '../../../utils/calendar'
+import { getLastNMonths, MONTH_FULL_ES } from '../../../lib/calendar.ts'
 
 interface MonthDropdownProps {
   selectedMonth: number

@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { TopListCard } from './TopListCard'
 import { MonthDropdown } from './MonthDropdown'
-import { useTopRankos } from '../../../hooks/useDashboardTops'
+import { useTopRankos } from '../../../modules/network/dashboard/hooks/useDashboardTops.ts'
 
 interface TopRankosCardProps {
   userId: string

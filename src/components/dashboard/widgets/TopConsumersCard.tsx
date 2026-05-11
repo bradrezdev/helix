@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { TopListCard } from './TopListCard'
 import { MonthDropdown } from './MonthDropdown'
-import { useTopConsumers } from '../../../hooks/useDashboardTops'
+import { useTopConsumers } from '../../../modules/network/dashboard/hooks/useDashboardTops.ts'
 
 interface TopConsumersCardProps {
   userId: string

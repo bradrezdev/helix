@@ -1,0 +1,1 @@
+export { BilleteraPage } from './BilleteraPage'

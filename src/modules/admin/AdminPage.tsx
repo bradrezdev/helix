@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { User, GitBranch, Users } from 'lucide-react'
-import { useAuth } from '../../hooks/useAuth'
+import { useAuth } from '../auth/hooks/useAuth.ts'
 import { supabase } from '../../lib/supabase'
-import type { WalletTransaction } from '../../hooks/useWalletTransactions'
+import type { WalletTransaction } from '../finances/billetera/hooks/useWalletTransactions.ts'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

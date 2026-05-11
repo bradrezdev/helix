@@ -1,0 +1,1 @@
+export { GananciasPage } from './GananciasPage'

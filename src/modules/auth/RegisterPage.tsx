@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { useAuth } from '../../hooks/useAuth'
-import { useProfile } from '../../hooks/useProfile'
-import { RegisterForm } from '../../components/RegisterForm'
+import { useAuth } from './hooks/useAuth.ts'
+import { useProfile } from './hooks/useProfile.ts'
+import { RegisterForm } from './components/RegisterForm.tsx'
 
 export function RegisterPage() {
   const navigate = useNavigate()
