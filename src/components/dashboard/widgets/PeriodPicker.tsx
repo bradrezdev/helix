@@ -1,7 +1,7 @@
 // ─── PeriodPicker ─────────────────────────────────────────────────────────────
 // Shared period picker: shows last N months as selectable pills.
 
-import { getLastNMonths } from '../../../utils/calendar'
+import { getLastNMonths } from '../../../lib/calendar.ts'
 
 interface PeriodPickerProps {
   selectedMonth: number

@@ -1,9 +1,9 @@
 import { Link } from '@tanstack/react-router'
-import { Greeting } from './modules/dashboard/components/greeting'
-import { DashboardHero } from './modules/dashboard/components/hero'
-import { Title } from './modules/dashboard/components/title'
-import { GlanceCard, RankProgressCard } from './components/glance-cards'
-import PasswordField from './components/button'
+import { Greeting } from './modules/network/dashboard/components/greeting.tsx'
+import { DashboardHero } from './modules/network/dashboard/components/hero.tsx'
+import { Title } from './modules/network/dashboard/components/title.tsx'
+import { GlanceCard, RankProgressCard } from './components/ui/glance-cards.tsx'
+import PasswordField from './components/ui/button.tsx'
 
 export default function App() {
   return (

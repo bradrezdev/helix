@@ -4,8 +4,8 @@
 import { useState, useRef } from 'react'
 import { WidgetSkeleton } from './WidgetSkeleton'
 import { MonthDropdown } from './MonthDropdown'
-import { getDaysInMonth, MONTH_LABELS_ES } from '../../../utils/calendar'
-import { useEarnings } from '../../../hooks/useDashboardTops'
+import { getDaysInMonth, MONTH_LABELS_ES } from '../../../lib/calendar.ts'
+import { useEarnings } from '../../../modules/network/dashboard/hooks/useDashboardTops.ts'
 import { formatAmount } from '../../../lib/formatters'
 
 interface EarningsCardProps {

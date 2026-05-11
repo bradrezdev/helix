@@ -3,7 +3,7 @@
 
 import { WidgetSkeleton } from './WidgetSkeleton'
 import { formatBonoType, formatAmount } from '../../../lib/formatters'
-import type { BreakdownItem } from '../../../hooks/useNegocio'
+import type { BreakdownItem } from '../../../modules/network/negocio/hooks/useNegocio.ts'
 
 interface CommissionBreakdownCardProps {
   items: BreakdownItem[]

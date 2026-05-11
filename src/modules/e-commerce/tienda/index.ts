@@ -1,0 +1,5 @@
+export { TiendaPage } from './TiendaPage'
+export { CheckoutPage } from './CheckoutPage'
+export { CartSheet } from './CartSheet'
+export { AddressesPage } from './AddressesPage'
+export { PaymentMethodsPage } from './PaymentMethodsPage'

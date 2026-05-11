@@ -1,30 +1,31 @@
 import { createRootRoute, createRoute, createRouter, Outlet, redirect } from '@tanstack/react-router'
 import { supabase } from './supabase'
-import DashboardLayout from '../components/DashboardLayout'
-import ComisionesNivelPage from '../modules/comisiones/ComisionesNivelPage'
-import GananciasPage from '../modules/ganancias/GananciasPage'
-import BonoDetail from '../modules/ganancias/components/BonoDetail'
-import HistorialVolumenPage from '../modules/historial-volumen/HistorialVolumenPage'
-import HoldingTankPage from '../modules/inscripciones/HoldingTankPage'
+import DashboardLayout from '../layouts/DashboardLayout.tsx'
+import ComisionesNivelPage from '../modules/finances/comisiones/ComisionesNivelPage.tsx'
+import GananciasPage from '../modules/finances/ganancias/GananciasPage.tsx'
+import BonoDetail from '../modules/finances/ganancias/components/BonoDetail.tsx'
+import HistorialVolumenPage from '../modules/network/historial-volumen/HistorialVolumenPage.tsx'
+import HoldingTankPage from '../modules/network/inscripciones/HoldingTankPage.tsx'
 import { LoginPage } from '../modules/auth/LoginPage'
 import { RegisterPage } from '../modules/auth/RegisterPage'
 import { RegisterByLinkPage } from '../modules/auth/RegisterByLinkPage'
-import { DashboardPage } from '../modules/dashboard/DashboardPage'
-import { NetworkPage } from '../modules/network'
-import { NegocioPage } from '../modules/negocio/NegocioPage'
-import { PedidosPage } from '../modules/pedidos/PedidosPage'
-import { TiendaPage } from '../modules/tienda/TiendaPage'
-import { CheckoutPage } from '../modules/tienda/CheckoutPage'
-import { AddressesPage } from '../modules/tienda/AddressesPage'
-import { PaymentMethodsPage } from '../modules/tienda/PaymentMethodsPage'
+import { DashboardPage } from '../modules/network/dashboard/DashboardPage.tsx'
+import { NetworkPage } from '../modules/network/genealogy'
+import { NegocioPage } from '../modules/network/negocio/NegocioPage.tsx'
+import { PedidosPage } from '../modules/e-commerce/pedidos/PedidosPage.tsx'
+import { TiendaPage } from '../modules/e-commerce/tienda/TiendaPage.tsx'
+import { CheckoutPage } from '../modules/e-commerce/tienda/CheckoutPage.tsx'
+import { AddressesPage } from '../modules/e-commerce/tienda/AddressesPage.tsx'
+import { PaymentMethodsPage } from '../modules/e-commerce/tienda/PaymentMethodsPage.tsx'
 import { AdminPage } from '../modules/admin/AdminPage'
 import { AdminOrdersPage } from '../modules/admin/AdminOrdersPage'
-import { AdminGuard } from '../components/AdminGuard'
-import { OrdenDetailPage } from '../modules/pedidos/OrdenDetailPage'
-import { SimuladorPage } from '../modules/herramientas/SimuladorPage'
-import { HerramientasPage } from '../modules/herramientas/HerramientasPage'
-import { RetirosPage } from '../modules/retiros/RetirosPage'
-import { BilleteraPage } from '../modules/billetera/BilleteraPage'
+import { AdminGuard } from '../modules/admin/components/AdminGuard.tsx'
+import { OrdenDetailPage } from '../modules/e-commerce/pedidos/OrdenDetailPage.tsx'
+import { SimuladorPage } from '../modules/admin/simulador/SimuladorPage.tsx'
+import { LtpPage } from '../modules/finances/awards/ltp/LtpPage.tsx'
+import { RetirosPage } from '../modules/finances/retiros/RetirosPage.tsx'
+import { BilleteraPage } from '../modules/finances/billetera/BilleteraPage.tsx'
+import { SupportPage } from '../modules/support/SupportPage.tsx'
 
 // Helper: check auth
 async function requireAuth() {
@@ -178,7 +179,7 @@ const simuladorRoute = createRoute({
 const viajeRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/viaje',
-  component: HerramientasPage,
+  component: LtpPage,
 })
 
 const herramientasRedirectRoute = createRoute({
@@ -226,7 +227,13 @@ const historialVolumenRoute = createRoute({
 const inscripcionesRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/inscripciones',
-  component: () => <HoldingTankPage />,
+  component: HoldingTankPage,
+})
+
+const supportRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/soporte',
+  component: SupportPage,
 })
 
 const routeTree = rootRoute.addChildren([
@@ -256,6 +263,7 @@ const routeTree = rootRoute.addChildren([
     gananciasBonoRoute,
     historialVolumenRoute,
     inscripcionesRoute,
+    supportRoute,
   ]),
 ])
 

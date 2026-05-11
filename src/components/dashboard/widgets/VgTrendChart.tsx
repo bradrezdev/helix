@@ -4,7 +4,7 @@
 // X-axis: month labels (e.g. "Ene", "Feb")
 
 import { WidgetSkeleton } from './WidgetSkeleton'
-import type { VgTrendPoint } from '../../../hooks/useNegocio'
+import type { VgTrendPoint } from '../../../modules/network/negocio/hooks/useNegocio.ts'
 
 interface VgTrendChartProps {
   points: VgTrendPoint[]

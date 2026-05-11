@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate, Link } from '@tanstack/react-router'
-import { useAuth } from '../../hooks/useAuth'
+import { useAuth } from './hooks/useAuth.ts'
 
 export function LoginPage() {
   const { signIn, loading } = useAuth()

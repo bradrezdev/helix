@@ -4,8 +4,8 @@
 import { useState, useRef } from 'react'
 import { WidgetSkeleton } from './WidgetSkeleton'
 import { MonthDropdown } from './MonthDropdown'
-import { getDaysInMonth, MONTH_LABELS_ES } from '../../../utils/calendar'
-import { useFirstVsRepurchase } from '../../../hooks/useDashboardTops'
+import { getDaysInMonth, MONTH_LABELS_ES } from '../../../lib/calendar.ts'
+import { useFirstVsRepurchase } from '../../../modules/network/dashboard/hooks/useDashboardTops.ts'
 
 interface FirstVsRepurchaseCardProps {
   userId: string

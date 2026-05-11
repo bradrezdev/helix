@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { supabase } from '../../lib/supabase'
-import { RegisterForm } from '../../components/RegisterForm'
+import { RegisterForm } from './components/RegisterForm.tsx'
 
 interface SponsorInfo { id: string; user_id: number; name: string; apellidos: string | null }
 

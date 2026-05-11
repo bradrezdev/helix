@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { SlidersHorizontal, X, ChevronLeft, ChevronRight, Users } from 'lucide-react'
-import { useIsAdmin } from '../../hooks/useAdmin'
-import { useAdminOrders } from '../../hooks/useAdminOrders'
-import type { AdminOrder, AdminOrderFilter, AdminOrderUser } from '../../hooks/useAdminOrders'
-import { PDFDropdownButton } from '../../components/PDFDropdownButton'
+import { useIsAdmin } from './hooks/useAdmin.ts'
+import { useAdminOrders } from './hooks/useAdminOrders.ts'
+import type { AdminOrder, AdminOrderFilter, AdminOrderUser } from './hooks/useAdminOrders.ts'
+import { PDFDropdownButton } from '../e-commerce/pedidos/components/PDFDropdownButton.tsx'
 import {
   formatOrderStatus,
   formatPaymentMethod,
