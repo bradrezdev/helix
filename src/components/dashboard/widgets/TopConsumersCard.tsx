@@ -22,7 +22,7 @@ export function TopConsumersCard({ userId, userNumId, isAdmin }: TopConsumersCar
   const items = (data ?? []).map((user, i) => ({
     rank: i + 1,
     name: user.name,
-    value: `${user.total_pv.toLocaleString('es-MX')} PV`,
+    value: `${(user.total_pv ?? 0).toLocaleString('es-MX')} PV`,
     badge: user.rank ?? undefined,
   }))
 

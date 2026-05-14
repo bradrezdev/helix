@@ -158,8 +158,6 @@ export function useTopConsumers(
         usersData = (data ?? []) as { id: string; name: string; rank: string | null }[]
       }
 
-      return usersData
-
       return ((usersData ?? []) as { id: string; name: string; rank: string | null }[])
         .map((u) => ({
           user_id: u.id,

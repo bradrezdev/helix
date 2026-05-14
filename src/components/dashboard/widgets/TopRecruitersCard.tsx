@@ -22,7 +22,7 @@ export function TopRecruitersCard({ userId, userNumId, isAdmin }: TopRecruitersC
   const items = (data ?? []).map((user, i) => ({
     rank: i + 1,
     name: user.name,
-    value: `${user.recruited_count} inscrito${user.recruited_count !== 1 ? 's' : ''}`,
+    value: `${user.recruited_count ?? 0} inscrito${(user.recruited_count ?? 0) !== 1 ? 's' : ''}`,
     badge: user.rank ?? undefined,
   }))
 
