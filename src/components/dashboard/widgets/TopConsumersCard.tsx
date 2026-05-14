@@ -8,15 +8,16 @@ import { useTopConsumers } from '../../../modules/network/dashboard/hooks/useDas
 
 interface TopConsumersCardProps {
   userId: string
+  userNumId: number
   isAdmin: boolean
 }
 
-export function TopConsumersCard({ userId, isAdmin }: TopConsumersCardProps) {
+export function TopConsumersCard({ userId, userNumId, isAdmin }: TopConsumersCardProps) {
   const now = new Date()
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [year, setYear] = useState(now.getFullYear())
 
-  const { data, isLoading } = useTopConsumers(userId, month, year, isAdmin)
+  const { data, isLoading } = useTopConsumers(userId, userNumId, month, year, isAdmin)
 
   const items = (data ?? []).map((user, i) => ({
     rank: i + 1,

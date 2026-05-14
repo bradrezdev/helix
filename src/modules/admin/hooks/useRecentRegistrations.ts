@@ -11,20 +11,20 @@ export interface RecentRegistration {
   sponsor_id: string | null
 }
 
-export function useRecentRegistrations(userId: string) {
+export function useRecentRegistrations(userNumId: number | undefined) {
   return useQuery({
-    queryKey: ['recent-registrations', userId],
+    queryKey: ['recent-registrations', userNumId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('users')
         .select('id, name, rank, kit_type, enrollment_date, is_active, sponsor_id')
-        .eq('sponsor_id', userId)
+        .eq('sponsor_id', userNumId!)
         .order('enrollment_date', { ascending: false })
         .limit(10)
       if (error) throw error
       return (data ?? []) as RecentRegistration[]
     },
-    enabled: !!userId,
+    enabled: !!userNumId,
     staleTime: 5 * 60 * 1000,
   })
 }

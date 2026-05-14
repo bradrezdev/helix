@@ -8,15 +8,16 @@ import { useTopRankos } from '../../../modules/network/dashboard/hooks/useDashbo
 
 interface TopRankosCardProps {
   userId: string
+  userNumId: number
   isAdmin: boolean
 }
 
-export function TopRankosCard({ userId, isAdmin }: TopRankosCardProps) {
+export function TopRankosCard({ userId, userNumId, isAdmin }: TopRankosCardProps) {
   const now = new Date()
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [year, setYear] = useState(now.getFullYear())
 
-  const { data, isLoading } = useTopRankos(userId, month, year, isAdmin)
+  const { data, isLoading } = useTopRankos(userId, userNumId, month, year, isAdmin)
 
   const items = (data ?? []).map((user, i) => ({
     rank: i + 1,

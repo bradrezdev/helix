@@ -25,12 +25,13 @@ export interface TopRankUser {
 
 export function useTopRankos(
   userId: string,
+  userNumId: number,
   _month: number,
   _year: number,
   isAdmin: boolean,
 ) {
   return useQuery({
-    queryKey: ['top-rankos', userId, isAdmin],
+    queryKey: ['top-rankos', userId, userNumId, isAdmin],
     queryFn: async (): Promise<TopRankUser[]> => {
       let query = supabase
         .from('users')
@@ -38,7 +39,7 @@ export function useTopRankos(
         .not('rank', 'is', null)
 
       if (!isAdmin) {
-        query = query.or(`sponsor_id.eq.${userId},unilevel_parent_id.eq.${userId}`)
+        query = query.or(`sponsor_id.eq.${userNumId},unilevel_parent_id.eq.${userId}`)
       }
 
       const { data, error } = await query.limit(50)
@@ -72,12 +73,13 @@ export interface TopConsumer {
 
 export function useTopConsumers(
   userId: string,
+  userNumId: number,
   month: number,
   year: number,
   isAdmin: boolean,
 ) {
   return useQuery({
-    queryKey: ['top-consumers', userId, month, year, isAdmin],
+    queryKey: ['top-consumers', userId, userNumId, month, year, isAdmin],
     queryFn: async (): Promise<TopConsumer[]> => {
       // Fetch orders for the period with order_items and user info
       let ordersQuery = supabase
@@ -128,7 +130,7 @@ export function useTopConsumers(
         .in('id', userIds)
 
       if (!isAdmin) {
-        usersQuery = usersQuery.or(`sponsor_id.eq.${userId},id.eq.${userId}`)
+        usersQuery = usersQuery.or(`sponsor_id.eq.${userNumId},id.eq.${userId}`)
       }
 
       const { data: usersData, error: usersError } = await usersQuery
@@ -160,12 +162,13 @@ export interface TopRecruiter {
 
 export function useTopRecruiters(
   userId: string,
+  userNumId: number,
   month: number,
   year: number,
   isAdmin: boolean,
 ) {
   return useQuery({
-    queryKey: ['top-recruiters', userId, month, year, isAdmin],
+    queryKey: ['top-recruiters', userId, userNumId, month, year, isAdmin],
     queryFn: async (): Promise<TopRecruiter[]> => {
       const startDate = `${year}-${String(month).padStart(2, '0')}-01`
       const endDate = month === 12
@@ -185,9 +188,9 @@ export function useTopRecruiters(
 
       if (!newUsers || newUsers.length === 0) return []
 
-      // Count recruits per sponsor
-      const countBySponsor = new Map<string, number>()
-      for (const u of newUsers as { id: string; sponsor_id: string }[]) {
+      // Count recruits per sponsor (sponsor_id is BIGINT/number)
+      const countBySponsor = new Map<number, number>()
+      for (const u of newUsers as { id: string; sponsor_id: number }[]) {
         countBySponsor.set(u.sponsor_id, (countBySponsor.get(u.sponsor_id) ?? 0) + 1)
       }
 
@@ -195,22 +198,22 @@ export function useTopRecruiters(
 
       let sponsorsQuery = supabase
         .from('users')
-        .select('id, name, rank')
-        .in('id', sponsorIds)
+        .select('id, user_id, name, rank')
+        .in('user_id', sponsorIds)
 
       if (!isAdmin) {
-        sponsorsQuery = sponsorsQuery.or(`id.eq.${userId},sponsor_id.eq.${userId}`)
+        sponsorsQuery = sponsorsQuery.or(`id.eq.${userId},sponsor_id.eq.${userNumId}`)
       }
 
       const { data: sponsorsData, error: sponsorsError } = await sponsorsQuery
       if (sponsorsError) throw sponsorsError
 
-      return ((sponsorsData ?? []) as { id: string; name: string; rank: string | null }[])
+      return ((sponsorsData ?? []) as { id: string; user_id: number; name: string; rank: string | null }[])
         .map((u) => ({
           id: u.id,
           name: u.name,
           rank: u.rank,
-          recruited_count: countBySponsor.get(u.id) ?? 0,
+          recruited_count: countBySponsor.get(u.user_id) ?? 0,
         }))
         .sort((a, b) => b.recruited_count - a.recruited_count)
         .slice(0, 10)

@@ -2,7 +2,7 @@ import { useRecentRegistrations } from '../../admin/hooks/useRecentRegistrations
 import { getRankColor } from '../genealogy/NetworkNode.ts'
 
 interface RecentRegistrationsSectionProps {
-  userId: string
+  userNumId: number
 }
 
 function formatDate(dateStr: string | null): string {
@@ -15,8 +15,8 @@ function formatDate(dateStr: string | null): string {
   })
 }
 
-export function RecentRegistrationsSection({ userId }: RecentRegistrationsSectionProps) {
-  const { data: registrations, isLoading, isError } = useRecentRegistrations(userId)
+export function RecentRegistrationsSection({ userNumId }: RecentRegistrationsSectionProps) {
+  const { data: registrations, isLoading, isError } = useRecentRegistrations(userNumId)
 
   return (
     <div className="bg-white rounded-[32px] border border-[#EAECF0] shadow-sm overflow-hidden">

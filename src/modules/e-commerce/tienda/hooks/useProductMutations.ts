@@ -110,14 +110,14 @@ export function useBulkStatusChange() {
       if (status === 'privado' && options?.userIds && options.userIds.length > 0) {
         const rows = options.userIds.flatMap((userId) =>
           codes.map((product_code) => ({
-            product_code,
+            product_id: product_code,
             user_id: userId,
           }))
         )
 
         const { error: accessError } = await supabase
           .from('product_private_access')
-          .upsert(rows, { onConflict: 'product_code,user_id' })
+          .upsert(rows, { onConflict: 'product_id,user_id' })
 
         if (accessError) throw accessError
       }

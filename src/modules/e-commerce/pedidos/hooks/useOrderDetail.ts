@@ -75,7 +75,7 @@ async function fetchShipping(shippingData: ShippingData): Promise<{ label: strin
   if (shippingData.type === 'cedi') {
     const { data, error } = await supabase
       .from('cedis')
-      .select('name')
+      .select('nombre')
       .eq('id', shippingData.cedi_id)
       .single()
 
@@ -84,7 +84,7 @@ async function fetchShipping(shippingData: ShippingData): Promise<{ label: strin
       return { label: formatShippingMethod(shippingData), cediName: null }
     }
 
-    const cediName = (data as { name: string } | null)?.name ?? null
+    const cediName = (data as { nombre: string } | null)?.nombre ?? null
     return { label: formatShippingMethod(shippingData, cediName ?? undefined), cediName }
   }
 

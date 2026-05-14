@@ -11,8 +11,8 @@ export function useProductWhitelist(userId: string | undefined, user: UserProfil
     queryFn: async () => {
       const { data } = await supabase
         .from('products')
-        .select('code, name, category, is_kit, status, price_socio_mxn, price_public_mxn')
-        .neq('status', 'no_disponible')
+        .select('code, name, categoria_id, is_kit, product_status, price_socio_mxn, price_public_mxn')
+        .neq('product_status', 'no_disponible')
         .order('name')
       return (data ?? []) as Product[]
     },

@@ -8,15 +8,16 @@ import { useTopRecruiters } from '../../../modules/network/dashboard/hooks/useDa
 
 interface TopRecruitersCardProps {
   userId: string
+  userNumId: number
   isAdmin: boolean
 }
 
-export function TopRecruitersCard({ userId, isAdmin }: TopRecruitersCardProps) {
+export function TopRecruitersCard({ userId, userNumId, isAdmin }: TopRecruitersCardProps) {
   const now = new Date()
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [year, setYear] = useState(now.getFullYear())
 
-  const { data, isLoading } = useTopRecruiters(userId, month, year, isAdmin)
+  const { data, isLoading } = useTopRecruiters(userId, userNumId, month, year, isAdmin)
 
   const items = (data ?? []).map((user, i) => ({
     rank: i + 1,

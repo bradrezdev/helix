@@ -113,8 +113,8 @@ export function DashboardTier1({ profile }: DashboardTier1Props) {
       />
 
       {/* New widgets */}
-      <TopRecruitersCard userId={profile.id} isAdmin={profile.is_admin ?? false} />
-      <TopConsumersCard userId={profile.id} isAdmin={profile.is_admin ?? false} />
+      <TopRecruitersCard userId={profile.id} userNumId={profile.user_id} isAdmin={profile.is_admin ?? false} />
+      <TopConsumersCard userId={profile.id} userNumId={profile.user_id} isAdmin={profile.is_admin ?? false} />
       <FirstVsRepurchaseCard userId={profile.id} isAdmin={profile.is_admin ?? false} />
     </div>
   )

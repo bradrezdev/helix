@@ -1735,7 +1735,7 @@ function BuscarUsuarioSection() {
     setLoading(true)
     setError(null)
     try {
-      const { data } = await supabase.from('users').select('id, user_id, name, email, created_at').eq('sponsor_id', u.id)
+      const { data } = await supabase.from('users').select('id, user_id, name, email, created_at').eq('sponsor_id', u.user_id)
       if (!data) setDownline([])
       else setDownline(data as any[])
     } catch (e: any) { setError(e.message); setDownline([]) }
@@ -1799,10 +1799,10 @@ function VerDatosUsuarioSection() {
   // Fetch data when user is selected and subTab changes
   useEffect(() => {
     if (!selectedUser) return
-    fetchTabData(selectedUser.id, subTab)
+    fetchTabData(selectedUser.id, selectedUser.user_id, subTab)
   }, [subTab, selectedUser?.id])
 
-  async function fetchTabData(userId: string, tab: string) {
+  async function fetchTabData(userId: string, userNumId: number, tab: string) {
     setLoading(true)
     setError(null)
     try {
@@ -1819,7 +1819,7 @@ function VerDatosUsuarioSection() {
           query = supabase.from('wallet_transactions').select('id, type, amount, balance_after, created_at, description').eq('user_id', userId).order('created_at', { ascending: false }).limit(50)
           break
         case 'registros':
-          query = supabase.from('users').select('id, user_id, name, email, created_at').eq('sponsor_id', userId).order('created_at', { ascending: false }).limit(50)
+          query = supabase.from('users').select('id, user_id, name, email, created_at').eq('sponsor_id', userNumId).order('created_at', { ascending: false }).limit(50)
           break
         case 'retiros':
           query = supabase.from('wallet_transactions').select('id, type, amount, balance_after, created_at, description').eq('user_id', userId).eq('type', 'commission_payout').order('created_at', { ascending: false }).limit(50)
