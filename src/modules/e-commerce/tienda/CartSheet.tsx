@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { ShoppingCart, X, Plus, Minus, Trash2, ArrowRight, Gift } from 'lucide-react'
-import { useNavigate } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { useCart } from './store.ts'
 import { useStoreProducts } from './hooks/useStoreProducts.ts'
@@ -10,14 +9,15 @@ import { formatAmount } from '../../../lib/formatters.ts'
 
 export function CartSheet({
   onClose,
+  onCheckout,
   country = 'MXN',
   membership = 'socio',
 }: {
   onClose: () => void
+  onCheckout: () => void
   country?: string
   membership?: string
 }) {
-  const navigate = useNavigate()
   const { items, increment, decrement, total, totalPV, count, validateCart, isKitMode, setShowKitFilter } = useCart()
   const { data: freshProducts = [] } = useStoreProducts()
   const { rate: taxRate } = useTaxRate(country)
@@ -246,7 +246,7 @@ export function CartSheet({
                 setShowKitUpsell(true)
               } else {
                 onClose()
-                setTimeout(() => navigate({ to: '/checkout' }), 100)
+                onCheckout()
               }
             }}
             className="w-full py-4 rounded-full flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
@@ -311,7 +311,7 @@ export function CartSheet({
                 onClick={() => {
                   setShowKitUpsell(false)
                   onClose()
-                  setTimeout(() => navigate({ to: '/checkout' }), 100)
+                  onCheckout()
                 }}
                 className="w-full py-4 rounded-full font-semibold text-sm active:scale-[0.98] transition-transform"
                 style={{ background: '#F2F4F9', color: '#062A63', fontFamily: 'Poppins, sans-serif' }}

@@ -578,7 +578,14 @@ export function TiendaPage() {
       )}
 
       {/* CartSheet */}
-      {cartOpen && <CartSheet onClose={() => setCartOpen(false)} country={country} membership={membership} />}
+      {cartOpen && (
+        <CartSheet
+          onClose={() => setCartOpen(false)}
+          onCheckout={() => navigate({ to: '/checkout' })}
+          country={country}
+          membership={membership}
+        />
+      )}
     </main>
   )
 }
