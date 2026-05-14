@@ -49,11 +49,13 @@ async function requireGuest() {
 async function checkMembership({ location }: { location: { pathname: string } }) {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from('users')
     .select('membership, is_admin')
     .eq('id', session.user.id)
     .maybeSingle()
+  // Guard: if query fails (e.g. RLS recursion), don't block navigation
+  if (error || !profile) return
   // Admins bypass membership check — full access regardless of membership status
   if (profile?.is_admin) return
   if (
@@ -70,11 +72,12 @@ async function checkMembership({ location }: { location: { pathname: string } })
 async function requireNotCP() {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from('users')
     .select('membership')
     .eq('id', session.user.id)
     .maybeSingle()
+  if (error || !profile) return
   if (profile?.membership === 'cliente_preferente') {
     throw redirect({ to: '/' })
   }

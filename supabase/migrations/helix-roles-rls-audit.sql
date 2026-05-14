@@ -47,12 +47,12 @@ CREATE POLICY "taxes_admin_write" ON public.taxes
   WITH CHECK (auth_is_admin());
 
 -- Users SELECT: supervisors can read user data (needed for role assignment UI)
+-- IMPORTANT: Uses auth_is_admin_or_supervisor() (SECURITY DEFINER) NOT a raw subquery
+-- Raw SELECT FROM public.users in the USING clause causes infinite RLS recursion
 DROP POLICY IF EXISTS "users_select" ON public.users;
 CREATE POLICY "users_select" ON public.users
   FOR SELECT TO public
-  USING ((auth.uid() = id) OR auth_is_admin() OR (is_supervisor = true AND EXISTS (
-    SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND (u.is_admin = true OR u.is_supervisor = true)
-  )));
+  USING ((auth.uid() = id) OR auth_is_admin() OR (is_supervisor = true AND auth_is_admin_or_supervisor()));
 
 -- Users UPDATE: supervisors can update non-admin fields (role toggles)
 DROP POLICY IF EXISTS "users_update_admin" ON public.users;
