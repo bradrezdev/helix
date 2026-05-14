@@ -1,0 +1,13 @@
+-- Future: pg_cron jobs should read closure dates from admin_settings
+-- Currently the monthly-closure Edge Function uses hardcoded month-end logic.
+-- Once pg_cron is configured, jobs will read per-bono closure dates dynamically.
+--
+-- Pattern for reading closure dates in SQL/PLpgSQL:
+--   SELECT value::int FROM admin_settings WHERE key = 'closure.date.uninivel';
+--   Returns day of month (0 = end of month → 1st of next month)
+--
+-- Admin UI writes closure.date.{bono_type} via the useUpdateAdminSetting hook.
+-- See AdminPage.tsx → CierresSection for the UI that manages these values.
+--
+-- Bono types: patrocinio, uninivel, match, infinito_patrocinio,
+--             infinito_uninivel, fidelidad, promotor, avance_rango

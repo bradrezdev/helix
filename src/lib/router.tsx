@@ -42,6 +42,42 @@ async function requireGuest() {
   }
 }
 
+/**
+ * Check membership: redirect socio_pendiente/null to /tienda.
+ * Run after requireAuth in authenticatedRoute.
+ */
+async function checkMembership({ location }: { location: { pathname: string } }) {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return
+  const { data: profile } = await supabase
+    .from('users')
+    .select('membership')
+    .eq('id', session.user.id)
+    .maybeSingle()
+  if (
+    (profile?.membership === 'socio_pendiente' || !profile?.membership) &&
+    location.pathname !== '/tienda' &&
+    !location.pathname.startsWith('/tienda') &&
+    !location.pathname.startsWith('/registro/')
+  ) {
+    throw redirect({ to: '/tienda' })
+  }
+}
+
+/** Block cliente_preferente from business routes. */
+async function requireNotCP() {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return
+  const { data: profile } = await supabase
+    .from('users')
+    .select('membership')
+    .eq('id', session.user.id)
+    .maybeSingle()
+  if (profile?.membership === 'cliente_preferente') {
+    throw redirect({ to: '/' })
+  }
+}
+
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
 const rootRoute = createRootRoute({
@@ -61,6 +97,7 @@ const loginRoute = createRoute({
 const registerRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/register',
+  beforeLoad: requireNotCP,
   validateSearch: (search: Record<string, unknown>) => ({
     sponsor: search.sponsor ? String(search.sponsor) : undefined,
     locked: search.locked === 'true' || search.locked === true,
@@ -80,7 +117,10 @@ const registerByLinkRoute = createRoute({
 const authenticatedRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'authenticated',
-  beforeLoad: requireAuth,
+  beforeLoad: async (ctx) => {
+    await requireAuth()
+    await checkMembership(ctx)
+  },
   component: () => (
     <DashboardLayout>
       <Outlet />
@@ -105,6 +145,7 @@ const networkRoute = createRoute({
 const networkTreeRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/network',
+  beforeLoad: requireNotCP,
   component: NetworkPage,
 })
 
@@ -203,12 +244,14 @@ const billeteraRoute = createRoute({
 const comisionesRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/comisiones',
+  beforeLoad: requireNotCP,
   component: () => <ComisionesNivelPage />,
 })
 
 const gananciasRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/ganancias',
+  beforeLoad: requireNotCP,
   component: () => <GananciasPage />,
 })
 
@@ -227,6 +270,7 @@ const historialVolumenRoute = createRoute({
 const inscripcionesRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/inscripciones',
+  beforeLoad: requireNotCP,
   component: HoldingTankPage,
 })
 

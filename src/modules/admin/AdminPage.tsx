@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { User, GitBranch, Users } from 'lucide-react'
 import { useAuth } from '../auth/hooks/useAuth.ts'
 import { supabase } from '../../lib/supabase'
+import { useAdminSettings, useUpdateAdminSetting } from './hooks/useAdminSettings.ts'
 import type { WalletTransaction } from '../finances/billetera/hooks/useWalletTransactions.ts'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -687,6 +688,9 @@ interface AdminStats {
   ordersThisMonth: number
   pendingCommissions: number
   totalWalletBalance: number
+  totalPaidOrders: number
+  totalSalesRevenue: number
+  totalCommissionPaid: number
 }
 
 function useAdminStats() {
@@ -701,16 +705,27 @@ function useAdminStats() {
         const now = new Date()
         const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
 
-        const [usersRes, ordersRes, commissionsRes, walletsRes] = await Promise.all([
+        const [
+          usersRes,
+          ordersRes,
+          commissionsRes,
+          walletsRes,
+          paidOrdersRes,
+          salesRes,
+          commissionPaidRes,
+        ] = await Promise.all([
           supabase.from('users').select('id', { count: 'exact', head: true }),
           supabase.from('orders').select('id', { count: 'exact', head: true }).gte('created_at', firstOfMonth),
           supabase.from('commissions').select('id', { count: 'exact', head: true }).is('paid_at', null).not('calculated_at', 'is', null),
           supabase.from('wallets').select('balance'),
+          supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'paid'),
+          supabase.from('orders').select('total_amount').eq('status', 'paid'),
+          supabase.from('commissions').select('amount').not('paid_at', 'is', null),
         ])
 
         if (cancelled) return
 
-        // Handle potential errors in any of the responses
+        // Handle potential errors
         if (walletsRes.error) {
           console.error('Error fetching wallets:', walletsRes.error)
         }
@@ -720,11 +735,24 @@ function useAdminStats() {
           0
         )
 
+        const totalRevenue = ((salesRes.data ?? []) as { total_amount: number }[]).reduce(
+          (sum: number, o) => sum + (Number(o.total_amount) || 0),
+          0
+        )
+
+        const totalCommissionsPaid = ((commissionPaidRes.data ?? []) as { amount: number }[]).reduce(
+          (sum: number, c) => sum + (Number(c.amount) || 0),
+          0
+        )
+
         setStats({
           totalUsers: usersRes.count ?? 0,
           ordersThisMonth: ordersRes.count ?? 0,
           pendingCommissions: commissionsRes.count ?? 0,
           totalWalletBalance: totalBalance,
+          totalPaidOrders: paidOrdersRes.count ?? 0,
+          totalSalesRevenue: totalRevenue,
+          totalCommissionPaid: totalCommissionsPaid,
         })
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Error al cargar estadísticas')
@@ -746,6 +774,9 @@ function EstadisticasSection() {
     ? [
         { label: 'Usuarios registrados', value: formatNumber(stats.totalUsers) },
         { label: 'Órdenes este mes', value: formatNumber(stats.ordersThisMonth) },
+        { label: 'Órdenes pagadas (total)', value: formatNumber(stats.totalPaidOrders) },
+        { label: 'Ventas totales', value: formatCurrencyMXN(stats.totalSalesRevenue) },
+        { label: 'Comisiones pagadas', value: formatCurrencyMXN(stats.totalCommissionPaid) },
         { label: 'Comisiones pendientes', value: formatNumber(stats.pendingCommissions) },
         { label: 'Total en billeteras', value: formatCurrencyMXN(stats.totalWalletBalance) },
       ]
@@ -761,7 +792,7 @@ function EstadisticasSection() {
       )}
       <div className="grid grid-cols-2 gap-3">
         {loading
-          ? Array.from({ length: 4 }).map((_, i) => (
+          ? Array.from({ length: 7 }).map((_, i) => (
               <div key={i} className="rounded-[18px] bg-[#F2F4F9] h-16 animate-pulse" />
             ))
           : statItems.map((item) => (
@@ -1650,7 +1681,7 @@ function HoldingTankSection() {
 
 // ─── Tab Nav ──────────────────────────────────────────────────────────────────
 
-type TabId = 'cierre' | 'pagos' | 'billetera' | 'stats' | 'asignar' | 'patrocinio' | 'holding' | 'datos' | 'exportar' | 'orden' | 'cambio' | 'red'
+type TabId = 'cierre' | 'pagos' | 'billetera' | 'stats' | 'asignar' | 'patrocinio' | 'holding' | 'datos' | 'exportar' | 'orden' | 'cambio' | 'red' | 'config' | 'roles'
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'cierre', label: 'Cierre Mes' },
@@ -1661,10 +1692,12 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'patrocinio', label: 'Patrocinio' },
   { id: 'holding', label: 'Holding Tank' },
   { id: 'datos', label: 'Datos Usuario' },
+  { id: 'config', label: 'Configuración' },
   { id: 'exportar', label: 'Exportar' },
   { id: 'orden', label: 'Editar Orden' },
   { id: 'cambio', label: 'Tipo Cambio' },
   { id: 'red', label: 'Crear Red' },
+  { id: 'roles', label: 'Roles' },
 ]
 
 // ─── NEW TOOLS H–O ──────────────────────────────────────────────────────────
@@ -2576,6 +2609,662 @@ function ToolMCrearRedSection() {
   )
 }
 
+// ─── Section Config — Configuración (Comisiones, Impuestos, Cierres) ─────────
+
+/** Bono types used in admin_settings keys — mirrors the monthly-closure Edge Function */
+const BONO_TYPES = [
+  { id: 'patrocinio', label: 'Patrocinio' },
+  { id: 'uninivel', label: 'Uninivel' },
+  { id: 'match', label: 'Match' },
+  { id: 'infinito_patrocinio', label: 'Infinito Patrocinio' },
+  { id: 'infinito_uninivel', label: 'Infinito Uninivel' },
+  { id: 'fidelidad', label: 'Fidelidad' },
+  { id: 'promotor', label: 'Promotor' },
+  { id: 'avance_rango', label: 'Avance de Rango' },
+] as const
+
+/** Commission levels per bono type — used to build admin_settings keys */
+const BONO_LEVELS: Record<string, number[]> = {
+  patrocinio: [1, 2, 3],
+  uninivel: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+  match: [1],
+  infinito_patrocinio: [1],
+  infinito_uninivel: [1],
+  fidelidad: [1],
+  promotor: [1],
+  avance_rango: [1],
+}
+
+// ── Config Section: Comisiones ───────────────────────────────────────────────
+
+function ComisionesSubSection() {
+  const { settings, loading } = useAdminSettings()
+  const updateSetting = useUpdateAdminSetting()
+  const [saving, setSaving] = useState<string | null>(null)
+  const [result, setResult] = useState<string | null>(null)
+
+  async function handleSave(bonoType: string) {
+    setSaving(bonoType)
+    setResult(null)
+    try {
+      const keys = BONO_LEVELS[bonoType] ?? [1]
+      // Save each level's value
+      for (const level of keys) {
+        const key = level === 1 ? `commission.pct.${bonoType}` : `commission.pct.${bonoType}_l${level}`
+        const input = document.getElementById(key) as HTMLInputElement
+        if (input && input.value !== '') {
+          await updateSetting.mutateAsync({ key, value: String(Number(input.value) / 100) })
+        }
+      }
+      setResult(`Porcentajes de ${bonoType} guardados`)
+    } catch (e) {
+      setResult(`Error: ${e instanceof Error ? e.message : 'Desconocido'}`)
+    } finally {
+      setSaving(null)
+    }
+  }
+
+  function getPct(key: string): string {
+    const raw = settings[key]
+    if (!raw) return ''
+    return String(Number(raw) * 100)
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="rounded-[18px] bg-[#F2F4F9] h-12 animate-pulse" />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {BONO_TYPES.map((bono) => {
+        const levels = BONO_LEVELS[bono.id] ?? [1]
+        return (
+          <div key={bono.id} className="rounded-[24px] border border-[#EAECF0] bg-white p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
+                {bono.label}
+              </p>
+              <button
+                onClick={() => handleSave(bono.id)}
+                disabled={saving === bono.id}
+                className="px-4 py-1.5 rounded-full text-xs font-semibold text-white disabled:opacity-60 transition-all active:scale-95"
+                style={{ background: '#062A63', fontFamily: 'Poppins, sans-serif' }}
+              >
+                {saving === bono.id ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {levels.map((level) => {
+                const key = level === 1 ? `commission.pct.${bono.id}` : `commission.pct.${bono.id}_l${level}`
+                return (
+                  <div key={key} className="flex flex-col items-center gap-1">
+                    <label className="text-[10px] font-medium uppercase tracking-wide" style={{ color: '#9CA3AF' }}>
+                      Nivel {level}
+                    </label>
+                    <div className="relative">
+                      <input
+                        id={key}
+                        type="number"
+                        defaultValue={getPct(key)}
+                        min={0}
+                        max={100}
+                        step={0.1}
+                        className="w-20 rounded-[14px] border border-[#EAECF0] px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#062A63]/20"
+                        style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
+      {result && (
+        <div className="rounded-[18px] bg-green-50 border border-green-200 p-3 text-sm text-green-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          {result}
+        </div>
+      )}
+      <p className="text-xs italic" style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}>
+        Nota: Los cambios aplicarán en el siguiente ciclo de comisiones
+      </p>
+    </div>
+  )
+}
+
+// ── Config Section: Impuestos por País ───────────────────────────────────────
+
+interface TaxRow {
+  id: string
+  country: string
+  rate: number
+  label: string
+}
+
+function ImpuestosSubSection() {
+  const [taxes, setTaxes] = useState<TaxRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    async function fetchTaxes() {
+      try {
+        const { data, error: err } = await supabase
+          .from('taxes')
+          .select('id, country, rate, label')
+          .order('country')
+        if (err) throw err
+        if (!cancelled) setTaxes((data ?? []) as TaxRow[])
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : 'Error al cargar impuestos')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    fetchTaxes()
+    return () => { cancelled = true }
+  }, [])
+
+  return (
+    <div>
+      {loading ? (
+        <div className="space-y-2">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="rounded-[14px] bg-[#F2F4F9] h-10 animate-pulse" />
+          ))}
+        </div>
+      ) : error ? (
+        <div className="rounded-[18px] bg-red-50 border border-red-200 p-3 text-sm text-red-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          {error}
+        </div>
+      ) : taxes.length === 0 ? (
+        <div className="rounded-[18px] bg-[#F2F4F9] border border-[#EAECF0] p-4 text-center text-sm text-gray-400" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          No hay tasas de impuestos configuradas
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-[18px] border border-[#EAECF0]">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-[#F2F4F9]">
+                {['País', 'Tasa', 'Etiqueta'].map(h => (
+                  <th key={h} className="text-left py-2.5 px-4 text-xs font-semibold uppercase tracking-wide" style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {taxes.map((t) => (
+                <tr key={t.id} className="border-t border-[#EAECF0]">
+                  <td className="py-2.5 px-4 font-medium" style={{ color: '#383A3F' }}>{t.country}</td>
+                  <td className="py-2.5 px-4">{(Number(t.rate) * 100).toFixed(1)}%</td>
+                  <td className="py-2.5 px-4 text-gray-500">{t.label}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Config Section: Fechas de Cierre por Bono ────────────────────────────────
+
+function CierresSubSection() {
+  const { settings, loading } = useAdminSettings()
+  const updateSetting = useUpdateAdminSetting()
+  const [saving, setSaving] = useState<string | null>(null)
+  const [result, setResult] = useState<string | null>(null)
+
+  function getDay(bonoType: string): string {
+    const key = `closure.date.${bonoType}`
+    const raw = settings[key]
+    if (raw) return raw
+    // Fallback to closure.date.default (0 = end of month)
+    const def = settings['closure.date.default']
+    return def ?? '0'
+  }
+
+  async function handleSave(bonoType: string) {
+    setSaving(bonoType)
+    setResult(null)
+    try {
+      const input = document.getElementById(`closure-${bonoType}`) as HTMLInputElement
+      if (input) {
+        const key = `closure.date.${bonoType}`
+        await updateSetting.mutateAsync({ key, value: input.value })
+        setResult(`Fecha de cierre para ${bonoType} guardada`)
+      }
+    } catch (e) {
+      setResult(`Error: ${e instanceof Error ? e.message : 'Desconocido'}`)
+    } finally {
+      setSaving(null)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="rounded-[18px] bg-[#F2F4F9] h-12 animate-pulse" />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {BONO_TYPES.map((bono) => {
+        const day = getDay(bono.id)
+        return (
+          <div key={bono.id} className="flex items-center justify-between rounded-[24px] border border-[#EAECF0] bg-white p-4">
+            <div className="flex items-center gap-4">
+              <p className="text-sm font-semibold min-w-[140px]" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
+                {bono.label}
+              </p>
+              <div className="flex items-center gap-2">
+                <input
+                  id={`closure-${bono.id}`}
+                  type="number"
+                  defaultValue={day}
+                  min={0}
+                  max={28}
+                  className="w-16 rounded-[14px] border border-[#EAECF0] px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#062A63]/20"
+                  style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}
+                />
+                <span className="text-xs text-gray-400">día del mes</span>
+              </div>
+            </div>
+            <button
+              onClick={() => handleSave(bono.id)}
+              disabled={saving === bono.id}
+              className="px-4 py-1.5 rounded-full text-xs font-semibold text-white disabled:opacity-60 transition-all active:scale-95"
+              style={{ background: '#0CBCE5', fontFamily: 'Poppins, sans-serif' }}
+            >
+              {saving === bono.id ? 'Guardando...' : 'Guardar'}
+            </button>
+          </div>
+        )
+      })}
+      <div className="rounded-[18px] bg-[#F2F4F9] border border-[#EAECF0] p-3 text-xs text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>
+        Valor 0 = Fin de mes (cierre el día 1 del siguiente mes)
+      </div>
+      {result && (
+        <div className="rounded-[18px] bg-green-50 border border-green-200 p-3 text-sm text-green-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          {result}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Config Section: Main container with sub-tabs ────────────────────────────
+
+function ConfiguracionSection() {
+  const [subTab, setSubTab] = useState<'comisiones' | 'impuestos' | 'cierres'>('comisiones')
+
+  const subTabs: { id: typeof subTab; label: string }[] = [
+    { id: 'comisiones', label: 'Comisiones' },
+    { id: 'impuestos', label: 'Impuestos por País' },
+    { id: 'cierres', label: 'Fechas de Cierre' },
+  ]
+
+  return (
+    <Card>
+      <SectionLabel>Configuración</SectionLabel>
+      {/* Sub-tab nav */}
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
+        {subTabs.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setSubTab(t.id)}
+            className="shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-150"
+            style={{
+              background: subTab === t.id ? '#062A63' : '#F2F4F9',
+              color: subTab === t.id ? '#fff' : '#383A3F',
+              border: subTab === t.id ? 'none' : '1px solid #EAECF0',
+              fontFamily: 'Poppins, sans-serif',
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Sub-tab content */}
+      {subTab === 'comisiones' && <ComisionesSubSection />}
+      {subTab === 'impuestos' && <ImpuestosSubSection />}
+      {subTab === 'cierres' && <CierresSubSection />}
+    </Card>
+  )
+}
+
+// ─── Section Roles — Role Assignment ──────────────────────────────────────────
+
+interface RoleUserResult {
+  id: string
+  user_id: number
+  name: string
+  email: string
+  is_supervisor: boolean
+  is_support: boolean
+}
+
+function RolesSection() {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<UserSearchResult[]>([])
+  const [selectedUser, setSelectedUser] = useState<RoleUserResult | null>(null)
+  const [isSupervisor, setIsSupervisor] = useState(false)
+  const [isSupport, setIsSupport] = useState(false)
+  const [searching, setSearching] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [result, setResult] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [auditLog, setAuditLog] = useState<any[]>([])
+  const [auditLoading, setAuditLoading] = useState(false)
+
+  async function handleSearch(query: string) {
+    setSearchQuery(query)
+    setSelectedUser(null)
+    if (query.length < 2) { setSearchResults([]); return }
+    setSearching(true)
+    try {
+      const isNumeric = /^\d+$/.test(query)
+      let q = supabase.from('users').select('id, user_id, name, apellidos, email, is_supervisor, is_support').limit(5)
+      if (isNumeric) { q = q.eq('user_id', Number(query)) as any }
+      else { q = q.or(`name.ilike.%${query}%,email.ilike.%${query}%`) as any }
+      const { data } = await q
+      setSearchResults((data as UserSearchResult[]) ?? [])
+    } finally { setSearching(false) }
+  }
+
+  async function handleSelectUser(u: UserSearchResult) {
+    // Fetch full user data with role fields
+    setSearching(true)
+    try {
+      const { data } = await supabase
+        .from('users')
+        .select('id, user_id, name, email, is_supervisor, is_support')
+        .eq('id', u.id)
+        .single()
+      if (data) {
+        const user = data as RoleUserResult
+        setSelectedUser(user)
+        setIsSupervisor(user.is_supervisor ?? false)
+        setIsSupport(user.is_support ?? false)
+        setSearchResults([])
+        setSearchQuery(`${user.name} (#${user.user_id})`.trim())
+        // Fetch audit log for this user
+        fetchAuditLog(user.id)
+      }
+    } finally { setSearching(false) }
+  }
+
+  async function fetchAuditLog(userId: string) {
+    setAuditLoading(true)
+    try {
+      const { data } = await supabase
+        .from('role_changes')
+        .select('id, old_roles, new_roles, changed_at, changed_by')
+        .eq('user_id', userId)
+        .order('changed_at', { ascending: false })
+        .limit(20)
+      setAuditLog((data ?? []) as any[])
+    } finally { setAuditLoading(false) }
+  }
+
+  function handleClear() {
+    setSelectedUser(null)
+    setSearchQuery('')
+    setSearchResults([])
+    setResult(null)
+    setError(null)
+    setAuditLog([])
+  }
+
+  async function handleSave() {
+    if (!selectedUser) return
+    setSaving(true)
+    setError(null)
+    setResult(null)
+    try {
+      // Capture old roles before update
+      const oldRoles = {
+        is_supervisor: selectedUser.is_supervisor ?? false,
+        is_support: selectedUser.is_support ?? false,
+      }
+      const newRoles = { is_supervisor, is_support }
+
+      // Update user roles
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ is_supervisor, is_support })
+        .eq('id', selectedUser.id)
+      if (updateError) throw updateError
+
+      // Insert audit record
+      const { error: auditError } = await supabase
+        .from('role_changes')
+        .insert({
+          user_id: selectedUser.id,
+          old_roles: oldRoles,
+          new_roles: newRoles,
+        })
+      if (auditError) throw auditError
+
+      setSelectedUser({ ...selectedUser, is_supervisor, is_support })
+      setResult('Roles actualizados correctamente')
+      // Refresh audit log
+      fetchAuditLog(selectedUser.id)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al guardar roles')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Card>
+      <SectionLabel>Asignación de Roles</SectionLabel>
+      <div className="space-y-4">
+        {/* User search */}
+        <div className="relative">
+          <label className="text-xs text-gray-500 mb-1 block" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Usuario
+          </label>
+          <input
+            type="text"
+            placeholder="Buscar por nombre, correo o ID..."
+            value={selectedUser ? `${selectedUser.name} (#${selectedUser.user_id})` : searchQuery}
+            onChange={(e) => { if (!selectedUser) handleSearch(e.target.value) }}
+            disabled={!!selectedUser}
+            className="w-full rounded-[18px] border border-[#EAECF0] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#062A63]/20 disabled:bg-[#F2F4F9]"
+            style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}
+          />
+          {selectedUser && (
+            <button
+              onClick={handleClear}
+              className="absolute right-3 top-9 text-xs text-gray-400 hover:text-gray-600"
+            >
+              X
+            </button>
+          )}
+          {searchResults.length > 0 && !selectedUser && (
+            <div
+              className="absolute z-10 top-full left-0 right-0 mt-1 rounded-[18px] overflow-hidden shadow-lg"
+              style={{ background: '#fff', border: '1px solid #EAECF0' }}
+            >
+              {searchResults.map((u) => (
+                <button
+                  key={u.id}
+                  className="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-[#F2F4F9] transition-colors text-left"
+                  onClick={() => handleSelectUser(u)}
+                >
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                    style={{ background: '#062A63' }}
+                  >
+                    {((u.name?.[0] ?? '') + (u.apellidos?.[0] ?? '')).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}>
+                      {u.name} {u.apellidos}
+                    </p>
+                    <p className="text-xs text-gray-400">#{u.user_id} · {u.email}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+          {searching && (
+            <p className="text-xs text-gray-400 mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Buscando...</p>
+          )}
+        </div>
+
+        {/* Selected user card with role toggles */}
+        {selectedUser && (
+          <>
+            <div className="rounded-[18px] bg-[#F2F4F9] border border-[#EAECF0] p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
+                  style={{ background: '#062A63' }}
+                >
+                  {((selectedUser.name?.[0] ?? '')).toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}>
+                    {selectedUser.name}
+                  </p>
+                  <p className="text-xs text-gray-400">#{selectedUser.user_id} · {selectedUser.email}</p>
+                </div>
+              </div>
+
+              <div className="border-t border-[#EAECF0] pt-3 space-y-3">
+                {/* Supervisor toggle */}
+                <label className="flex items-center justify-between cursor-pointer select-none">
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}>
+                      Supervisor
+                    </p>
+                    <p className="text-xs text-gray-400" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                      Acceso a administración + gestión de usuarios
+                    </p>
+                  </div>
+                  <div
+                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${isSupervisor ? 'bg-[#0CBCE5]' : 'bg-[#EAECF0]'}`}
+                    onClick={() => setIsSupervisor(v => !v)}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${isSupervisor ? 'translate-x-5' : 'translate-x-0'}`}
+                    />
+                  </div>
+                </label>
+
+                {/* Support toggle */}
+                <label className="flex items-center justify-between cursor-pointer select-none">
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}>
+                      Soporte
+                    </p>
+                    <p className="text-xs text-gray-400" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                      Acceso de solo lectura al panel de administración
+                    </p>
+                  </div>
+                  <div
+                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${isSupport ? 'bg-[#0CBCE5]' : 'bg-[#EAECF0]'}`}
+                    onClick={() => setIsSupport(v => !v)}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${isSupport ? 'translate-x-5' : 'translate-x-0'}`}
+                    />
+                  </div>
+                </label>
+              </div>
+
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold text-white disabled:opacity-60 transition-all active:scale-95"
+                style={{ background: '#062A63', fontFamily: 'Poppins, sans-serif' }}
+              >
+                {saving && <Spinner />}
+                Guardar Roles
+              </button>
+            </div>
+
+            {/* Audit log */}
+            <div className="pt-2">
+              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'rgba(56,58,63,0.60)', fontFamily: 'Poppins, sans-serif' }}>
+                Historial de cambios
+              </p>
+              {auditLoading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="h-8 rounded-[14px] bg-[#F2F4F9] animate-pulse" />
+                  ))}
+                </div>
+              ) : auditLog.length === 0 ? (
+                <p className="text-xs text-gray-400" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Sin cambios registrados
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {auditLog.map((entry: any) => {
+                    const oldR = entry.old_roles ?? {}
+                    const newR = entry.new_roles ?? {}
+                    return (
+                      <div key={entry.id} className="rounded-[14px] bg-[#F2F4F9] border border-[#EAECF0] p-3 text-xs space-y-1">
+                        <p className="font-medium" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
+                          {new Date(entry.changed_at).toLocaleString('es-MX')}
+                        </p>
+                        <div className="flex gap-4">
+                          {oldR.is_supervisor !== newR.is_supervisor && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium"
+                              style={{ background: newR.is_supervisor ? 'rgba(12,188,229,0.1)' : 'rgba(239,68,68,0.1)', color: newR.is_supervisor ? '#0CBCE5' : '#EF4444' }}
+                            >
+                              Supervisor: {oldR.is_supervisor ? 'Sí' : 'No'} → {newR.is_supervisor ? 'Sí' : 'No'}
+                            </span>
+                          )}
+                          {oldR.is_support !== newR.is_support && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium"
+                              style={{ background: newR.is_support ? 'rgba(12,188,229,0.1)' : 'rgba(239,68,68,0.1)', color: newR.is_support ? '#0CBCE5' : '#EF4444' }}
+                            >
+                              Soporte: {oldR.is_support ? 'Sí' : 'No'} → {newR.is_support ? 'Sí' : 'No'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {result && (
+          <div className="rounded-[18px] bg-green-50 border border-green-200 p-4 text-sm text-green-700">
+            {result}
+          </div>
+        )}
+        {error && (
+          <div className="rounded-[18px] bg-red-50 border border-red-200 p-4 text-sm text-red-600">
+            {error}
+          </div>
+        )}
+      </div>
+    </Card>
+  )
+}
+
 // ─── Admin Page ───────────────────────────────────────────────────────────────
 
 export function AdminPage() {
@@ -2621,6 +3310,8 @@ export function AdminPage() {
         {activeTab === 'patrocinio' && <CederPatrocinioSection />}
         {activeTab === 'holding' && <HoldingTankSection />}
         {activeTab === 'datos' && <VerDatosUsuarioSection />}
+        {activeTab === 'config' && <ConfiguracionSection />}
+        {activeTab === 'roles' && <RolesSection />}
         {activeTab === 'exportar' && <ExportarCSvSection />}
         {activeTab === 'orden' && <EditarOrdenSection />}
         {activeTab === 'cambio' && <TipoCambioSection />}

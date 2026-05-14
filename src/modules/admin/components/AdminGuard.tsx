@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../auth/hooks/useAuth.ts'
 import { useProfile } from '../../auth/hooks/useProfile.ts'
-import { useIsAdmin } from '../hooks/useAdmin.ts'
+import { useRole } from '../hooks/useRole.ts'
 import type { ReactNode } from 'react'
 
 interface AdminGuardProps {
@@ -12,7 +12,7 @@ export function AdminGuard({ children }: AdminGuardProps) {
   const { loading: authLoading } = useAuth()
   const { user } = useAuth()
   const { isLoading: profileLoading, error: profileError } = useProfile(user?.id ?? '')
-  const isAdmin = useIsAdmin()
+  const { canAccessAdmin, effectiveRole } = useRole()
   const [timedOut, setTimedOut] = useState(false)
 
   const isLoading = authLoading || profileLoading
@@ -71,7 +71,7 @@ export function AdminGuard({ children }: AdminGuardProps) {
     )
   }
 
-  if (!isAdmin) {
+  if (!canAccessAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F2F4F9] p-6">
         <div
@@ -91,6 +91,14 @@ export function AdminGuard({ children }: AdminGuardProps) {
           >
             No tienes permisos para acceder al panel de administración.
           </p>
+          {effectiveRole !== 'user' && (
+            <p
+              className="text-xs mt-2"
+              style={{ color: '#0CBCE5', fontFamily: 'Poppins, sans-serif' }}
+            >
+              Tu rol ({effectiveRole}) no tiene acceso al panel.
+            </p>
+          )}
         </div>
       </div>
     )

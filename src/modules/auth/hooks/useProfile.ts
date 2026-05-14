@@ -14,7 +14,10 @@ export interface UserProfile {
   created_at: string
   link_referido: string | null
   is_admin: boolean | null
+  is_supervisor: boolean | null
+  is_support: boolean | null
   country: string
+  gender: string | null
 }
 
 export interface SponsorProfile {
@@ -32,7 +35,7 @@ export function useProfile(userId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('users')
-        .select('id, user_id, name, apellidos, email, rank, membership, sponsor_id, enrollment_date, created_at, link_referido, is_admin, country')
+        .select('id, user_id, name, apellidos, email, rank, membership, sponsor_id, enrollment_date, created_at, link_referido, is_admin, is_supervisor, is_support, country, gender')
         .eq('id', userId)
         .maybeSingle()
       // maybeSingle() returns null instead of 406 when no row found

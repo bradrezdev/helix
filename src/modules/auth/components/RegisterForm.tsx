@@ -66,10 +66,11 @@ export function passwordStrength(pw: string): { score: number; label: string; co
   let score = 0
   if (pw.length >= 8) score++
   if (/[A-Z]/.test(pw)) score++
+  if (/[a-z]/.test(pw)) score++
   if (/[0-9]/.test(pw)) score++
   if (/[^A-Za-z0-9]/.test(pw)) score++
-  const labels = ['', 'Débil', 'Regular', 'Buena', 'Fuerte']
-  const colors = ['', '#EF4444', '#F59E0B', '#3B82F6', '#10B981']
+  const labels = ['', 'Débil', 'Regular', 'Buena', 'Fuerte', 'Muy Fuerte']
+  const colors = ['', '#EF4444', '#F59E0B', '#3B82F6', '#10B981', '#10B981']
   return { score, label: labels[score] ?? '', color: colors[score] ?? '' }
 }
 
@@ -144,6 +145,8 @@ export function RegisterForm({ sponsor, onSuccess, isAdmin }: RegisterFormProps)
   const [emailTouched, setEmailTouched] = useState(false)
   const [firstNameTouched, setFirstNameTouched] = useState(false)
   const [lastNameTouched, setLastNameTouched] = useState(false)
+  const [gender, setGender] = useState('')
+  const [membership, setMembership] = useState('socio')
 
   const NAME_REGEX = /^[a-zA-ZÀ-ÿ\s]{2,}$/
   const firstNameError = firstNameTouched && !NAME_REGEX.test(firstName.trim())
@@ -219,6 +222,8 @@ export function RegisterForm({ sponsor, onSuccess, isAdmin }: RegisterFormProps)
             sponsor_user_id: resolvedSponsorId,
             country: country.code,
             username,
+            gender: gender || null,
+            membership: membership || 'socio',
           },
         })
         if (fnError) throw fnError
@@ -235,6 +240,8 @@ export function RegisterForm({ sponsor, onSuccess, isAdmin }: RegisterFormProps)
               username,
               sponsor_id: resolvedSponsorId,
               country: country.code,
+              gender: gender || null,
+              membership: membership || 'socio',
             },
           },
         })
@@ -353,6 +360,21 @@ export function RegisterForm({ sponsor, onSuccess, isAdmin }: RegisterFormProps)
           </Field>
         </div>
 
+        {/* Género */}
+        <Field label="Género">
+          <select
+            value={gender}
+            onChange={e => setGender(e.target.value)}
+            className={inputBase}
+            style={{ ...inputStyle, appearance: 'none' }}
+          >
+            <option value="">Seleccionar género</option>
+            <option value="Masculino">Masculino</option>
+            <option value="Femenino">Femenino</option>
+            <option value="No especificar">No especificar</option>
+          </select>
+        </Field>
+
         {/* País */}
         <Field label="País">
           <div className="relative">
@@ -466,7 +488,7 @@ export function RegisterForm({ sponsor, onSuccess, isAdmin }: RegisterFormProps)
             <div className="flex items-center gap-2 mt-1">
               <div className="flex-1 h-1 rounded-full" style={{ background: '#EAECF0' }}>
                 <div className="h-1 rounded-full transition-all"
-                  style={{ width: `${(pwStrength.score / 4) * 100}%`, background: pwStrength.color }} />
+                  style={{ width: `${(pwStrength.score / 5) * 100}%`, background: pwStrength.color }} />
               </div>
               <span className="text-[10px] font-medium"
                 style={{ color: pwStrength.color, fontFamily: 'Poppins, sans-serif' }}>
@@ -475,7 +497,7 @@ export function RegisterForm({ sponsor, onSuccess, isAdmin }: RegisterFormProps)
             </div>
           )}
           <p className="text-[10px]" style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}>
-            Mínimo 8 caracteres, una mayúscula, un número y un símbolo
+            Mínimo 8 caracteres, por lo menos 1 mayúscula, 1 minúscula, 1 número y 1 carácter especial.
           </p>
         </Field>
 
@@ -506,6 +528,34 @@ export function RegisterForm({ sponsor, onSuccess, isAdmin }: RegisterFormProps)
               Las contraseñas no coinciden
             </p>
           )}
+        </Field>
+
+        {/* Membresía */}
+        <Field label="Registrarse como">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setMembership('socio')}
+              className={`flex-1 rounded-[18px] py-3 text-sm font-semibold transition-all ${
+                membership === 'socio'
+                  ? 'bg-[#062A63] text-white'
+                  : 'bg-gray-100 text-[#383A3F]'
+              }`}
+            >
+              Socio
+            </button>
+            <button
+              type="button"
+              onClick={() => setMembership('cliente_preferente')}
+              className={`flex-1 rounded-[18px] py-3 text-sm font-semibold transition-all ${
+                membership === 'cliente_preferente'
+                  ? 'bg-[#062A63] text-white'
+                  : 'bg-gray-100 text-[#383A3F]'
+              }`}
+            >
+              Cliente Preferente
+            </button>
+          </div>
         </Field>
 
         {/* T&C */}

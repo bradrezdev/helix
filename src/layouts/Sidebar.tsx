@@ -216,6 +216,8 @@ export function Sidebar() {
     ? `/register?sponsor=${profile.user_id}&locked=true`
     : '/register?locked=true'
 
+  const isBusinessAllowed = profile?.membership === 'socio' || profile?.membership === 'socio_pendiente' || !profile?.membership
+
   return (
     <aside
       className={cn(
@@ -267,51 +269,53 @@ export function Sidebar() {
           collapsed={sidebarCollapsed}
         />
 
-        {/* Negocio — dropdown group */}
-        <SidebarMenuGroup
-          icon={Building2}
-          label="Negocio"
-          collapsed={sidebarCollapsed}
-          expanded={negocioExpanded}
-          onToggle={toggleNegocio}
-          childRoutes={NEGOCIO_CHILD_ROUTES}
-        >
-          <SidebarMenuItem
-            icon={Network}
-            label="Árbol Uninivel"
-            to="/network"
-            indent
+        {/* Negocio — dropdown group (hidden for Cliente Preferente) */}
+        {isBusinessAllowed && (
+          <SidebarMenuGroup
+            icon={Building2}
+            label="Negocio"
             collapsed={sidebarCollapsed}
-          />
-          <SidebarMenuItem
-            icon={TrendingUp}
-            label="Historial de Volumen"
-            to="/historial-volumen"
-            indent
-            collapsed={sidebarCollapsed}
-          />
-          <SidebarMenuItem
-            icon={DollarSign}
-            label="Ganancias por Bono"
-            to="/ganancias"
-            indent
-            collapsed={sidebarCollapsed}
-          />
-          <SidebarMenuItem
-            icon={BarChart3}
-            label="Comisiones"
-            to="/comisiones"
-            indent
-            collapsed={sidebarCollapsed}
-          />
-          <SidebarMenuItem
-            icon={UserPlus}
-            label="Inscripciones"
-            to="/inscripciones"
-            indent
-            collapsed={sidebarCollapsed}
-          />
-        </SidebarMenuGroup>
+            expanded={negocioExpanded}
+            onToggle={toggleNegocio}
+            childRoutes={NEGOCIO_CHILD_ROUTES}
+          >
+            <SidebarMenuItem
+              icon={Network}
+              label="Árbol Uninivel"
+              to="/network"
+              indent
+              collapsed={sidebarCollapsed}
+            />
+            <SidebarMenuItem
+              icon={TrendingUp}
+              label="Historial de Volumen"
+              to="/historial-volumen"
+              indent
+              collapsed={sidebarCollapsed}
+            />
+            <SidebarMenuItem
+              icon={DollarSign}
+              label="Ganancias por Bono"
+              to="/ganancias"
+              indent
+              collapsed={sidebarCollapsed}
+            />
+            <SidebarMenuItem
+              icon={BarChart3}
+              label="Comisiones"
+              to="/comisiones"
+              indent
+              collapsed={sidebarCollapsed}
+            />
+            <SidebarMenuItem
+              icon={UserPlus}
+              label="Inscripciones"
+              to="/inscripciones"
+              indent
+              collapsed={sidebarCollapsed}
+            />
+          </SidebarMenuGroup>
+        )}
 
         {/* Nuevo registro */}
         <SidebarMenuItem
