@@ -244,8 +244,8 @@ export function CartSheet({
               if (hasMembership && !hasRealKit) {
                 setShowKitUpsell(true)
               } else {
-                window.location.href = '/checkout'
                 onClose()
+                setTimeout(() => navigate({ to: '/checkout' }), 100)
               }
             }}
             className="w-full py-4 rounded-full flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
@@ -309,8 +309,8 @@ export function CartSheet({
               <button
                 onClick={() => {
                   setShowKitUpsell(false)
-                  window.location.href = '/checkout'
                   onClose()
+                  setTimeout(() => navigate({ to: '/checkout' }), 100)
                 }}
                 className="w-full py-4 rounded-full font-semibold text-sm active:scale-[0.98] transition-transform"
                 style={{ background: '#F2F4F9', color: '#062A63', fontFamily: 'Poppins, sans-serif' }}

@@ -122,7 +122,7 @@ export const useCart = create<CartStore>()(
   clear: () => set({ items: [] }),
 
   setKitMode: (isKit, kitType) =>
-    set({ isKitMode: isKit, kitType: isKit ? kitType : null, items: [] }),
+    set({ isKitMode: isKit, kitType: isKit ? kitType : null }),
 
   validateCart: (freshProducts) => {
     const state = get()

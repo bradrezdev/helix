@@ -75,9 +75,8 @@ export function KitBuilderSheet({ kit, onClose, onKitConfirmed, country, members
   }
 
   function handleConfirm() {
-    // Set kit mode and rebuild cart with kit + addons
+    // Set kit mode and add kit + addons to cart (preserves existing items)
     setKitMode(true, kit.kit_type ?? null)
-    // setKitMode clears cart; re-add kit + selections
     add(kit)
     for (const sel of selections) {
       for (let i = 0; i < sel.qty; i++) {
