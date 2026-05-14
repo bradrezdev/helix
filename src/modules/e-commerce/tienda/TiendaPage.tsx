@@ -30,7 +30,7 @@ function MembresiaSection({
   country: string
   onSelect: (product: Product) => void
 }) {
-  const { data: products = [], isLoading } = useStoreProducts({ kitOnly: true })
+  const { data: products = [], isLoading } = useStoreProducts()
   const membresiaProduct = products.find((p) => p.kit_type === 'membresia')
 
   if (isLoading || !membresiaProduct) return null
@@ -501,8 +501,8 @@ export function TiendaPage() {
               onKitSelect={(p) => setKitProduct(p)}
             />
           )}
-          {/* Membresía section — only for cliente_preferente */}
-          {!isAdmin && membership === 'cliente_preferente' && (
+          {/* Membresía section — for cliente_preferente and socio_pendiente */}
+          {!isAdmin && (membership === 'cliente_preferente' || membership === 'socio_pendiente') && (
             <MembresiaSection
               country={country}
               membership={membership}
