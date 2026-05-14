@@ -66,7 +66,8 @@ async function checkMembership({ location }: { location: { pathname: string } })
     (profile?.membership === 'socio_pendiente' || !profile?.membership) &&
     location.pathname !== '/tienda' &&
     !location.pathname.startsWith('/tienda') &&
-    !location.pathname.startsWith('/registro/')
+    !location.pathname.startsWith('/registro/') &&
+    location.pathname !== '/checkout'
   ) {
     throw redirect({ to: '/tienda' })
   }
