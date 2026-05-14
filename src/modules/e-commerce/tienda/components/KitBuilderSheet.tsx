@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { X, ShoppingBag, Plus, Minus } from 'lucide-react'
+import { toast } from 'sonner'
 import type { Product } from '../hooks/useProducts.ts'
 import { useStoreProducts } from '../hooks/useStoreProducts.ts'
 import { useCart } from '../store.ts'
@@ -75,9 +76,13 @@ export function KitBuilderSheet({ kit, onClose, onKitConfirmed, country, members
   }
 
   function handleConfirm() {
-    // Set kit mode and add kit + addons to cart (preserves existing items)
+    // Preserve existing items; add kit + selections
     setKitMode(true, kit.kit_type ?? null)
-    add(kit)
+    const res = add(kit)
+    if (!res.ok) {
+      toast.error('No se pudo añadir el paquete de inicio')
+      return
+    }
     for (const sel of selections) {
       for (let i = 0; i < sel.qty; i++) {
         add(sel.product)

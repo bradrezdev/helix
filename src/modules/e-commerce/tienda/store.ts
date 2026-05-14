@@ -59,7 +59,8 @@ export const useCart = create<CartStore>()(
       return { ok: false, reason: 'stock_exceeded' }
     }
 
-    if (state.isKitMode && product.is_kit) {
+    // Kit limit: only 1 kit (non-membership) in kit mode
+    if (state.isKitMode && product.is_kit && product.kit_type !== 'membresia') {
       const hasKit = state.items.some((i) => i.product.is_kit)
       if (hasKit) {
         return { ok: false, reason: 'kit_limit' }

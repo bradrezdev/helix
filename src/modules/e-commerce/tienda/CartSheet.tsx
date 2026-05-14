@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { ShoppingCart, X, Plus, Minus, Trash2, ArrowRight, Gift } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { useCart } from './store.ts'
-
 import { useStoreProducts } from './hooks/useStoreProducts.ts'
 import { getProductPrice } from './utils/pricing.ts'
 import { useTaxRate } from './hooks/useTaxRate.ts'
@@ -17,6 +17,7 @@ export function CartSheet({
   country?: string
   membership?: string
 }) {
+  const navigate = useNavigate()
   const { items, increment, decrement, total, totalPV, count, validateCart, isKitMode, setShowKitFilter } = useCart()
   const { data: freshProducts = [] } = useStoreProducts()
   const { rate: taxRate } = useTaxRate(country)
