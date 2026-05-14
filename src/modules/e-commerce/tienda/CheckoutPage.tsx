@@ -7,6 +7,7 @@ import { useProfile } from '../../auth/hooks/useProfile.ts'
 import { useTaxRate } from './hooks/useTaxRate.ts'
 import { supabase } from '../../../lib/supabase.ts'
 import { useDefaultDireccion, setDefaultDireccion } from './hooks/useDirecciones.ts'
+import { useWallet } from '../../finances/billetera/hooks/useWallet.ts'
 import type { Direccion } from './hooks/useDirecciones.ts'
 import type { Cedi } from './hooks/useCedis.ts'
 import { NuevaDireccionSheet } from './components/NuevaDireccionSheet.tsx'
@@ -33,6 +34,9 @@ export function CheckoutPage() {
   const country: string = getCountryCurrency(profile?.country ?? 'MX')
   const membership: string = profile?.membership ?? 'socio'
   const { rate: taxRate, label: taxLabel } = useTaxRate(country)
+  const { walletsByType } = useWallet(user?.id ?? null)
+  const mxnWallet = walletsByType.disponible?.find((w: { currency: string }) => w.currency === 'MXN')
+  const walletBalance = mxnWallet?.balance ?? 0
 
   const [step, setStep] = useState<Step>('review')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('wallet')
@@ -91,6 +95,7 @@ export function CheckoutPage() {
         p_items: payload,
         p_total_amount: grandTotal,
         p_payment_method: paymentMethod,
+        p_payment_ref: '',
         p_shipping_data: shippingData,
         p_tax_amount: taxAmount,
         p_with_membership: true,
@@ -370,7 +375,7 @@ export function CheckoutPage() {
                 Billetera virtual
               </p>
               <p className="text-xs" style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}>
-                Pago inmediato con saldo ONANO
+                Saldo: {walletBalance.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
               </p>
             </div>
             <div

@@ -3,6 +3,7 @@ import { LogOut, X, User, Users } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth.ts'
 import { useProfile, useSponsor } from '../hooks/useProfile.ts'
 import { useNavigate } from '@tanstack/react-router'
+import { useCart } from '../../e-commerce/tienda/store.ts'
 
 interface ProfileSheetProps {
   open: boolean
@@ -62,6 +63,7 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
 
   async function handleSignOut() {
     onClose()
+    useCart.getState().clear()
     try {
       await signOut()
     } catch {

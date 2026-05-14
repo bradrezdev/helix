@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate, Link } from '@tanstack/react-router'
 import { supabase } from '../../lib/supabase.ts'
 import { useAuth } from './hooks/useAuth.ts'
+import { useCart } from '../e-commerce/tienda/store.ts'
 
 export function LoginPage() {
   const { signIn, loading } = useAuth()
@@ -17,6 +18,7 @@ export function LoginPage() {
     setSubmitting(true)
     try {
       await signIn(email, password)
+      useCart.getState().clear()
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         const { data: profile } = await supabase
