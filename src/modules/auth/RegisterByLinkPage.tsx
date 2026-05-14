@@ -32,7 +32,7 @@ export function RegisterByLinkPage() {
   }, [username])
 
   async function handleSuccess() {
-    await navigate({ to: '/' })
+    await navigate({ to: '/tienda' })
   }
 
   // ── Loading / not found states ────────────────────────────────────────────

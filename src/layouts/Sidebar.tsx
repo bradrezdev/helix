@@ -216,7 +216,7 @@ export function Sidebar() {
     ? `/register?sponsor=${profile.user_id}&locked=true`
     : '/register?locked=true'
 
-  const isBusinessAllowed = profile?.membership === 'socio' || profile?.membership === 'socio_pendiente' || !profile?.membership
+  const isBusinessAllowed = profile?.membership === 'socio'
 
   return (
     <aside
@@ -364,21 +364,25 @@ export function Sidebar() {
           />
         </SidebarMenuGroup>
 
-        {/* Billetera */}
-        <SidebarMenuItem
-          icon={Wallet}
-          label="Billetera"
-          to="/billetera"
-          collapsed={sidebarCollapsed}
-        />
+        {/* Billetera — solo socios */}
+        {isBusinessAllowed && (
+          <SidebarMenuItem
+            icon={Wallet}
+            label="Billetera"
+            to="/billetera"
+            collapsed={sidebarCollapsed}
+          />
+        )}
 
-        {/* Viaje de Liderazgo */}
-        <SidebarMenuItem
-          icon={Plane}
-          label="Viaje de Liderazgo"
-          to="/viaje"
-          collapsed={sidebarCollapsed}
-        />
+        {/* Viaje de Liderazgo — solo socios */}
+        {isBusinessAllowed && (
+          <SidebarMenuItem
+            icon={Plane}
+            label="Viaje de Liderazgo"
+            to="/viaje"
+            collapsed={sidebarCollapsed}
+          />
+        )}
 
         {/* Soporte */}
         <SidebarMenuItem
@@ -388,13 +392,15 @@ export function Sidebar() {
           collapsed={sidebarCollapsed}
         />
 
-        {/* Simulador */}
-        <SidebarMenuItem
-          icon={Calculator}
-          label="Simulador"
-          to="/simulador"
-          collapsed={sidebarCollapsed}
-        />
+        {/* Simulador — solo socios */}
+        {isBusinessAllowed && (
+          <SidebarMenuItem
+            icon={Calculator}
+            label="Simulador"
+            to="/simulador"
+            collapsed={sidebarCollapsed}
+          />
+        )}
 
         {/* Admin — conditional: only rendered when profile confirms is_admin */}
         {profile?.is_admin && (

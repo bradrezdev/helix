@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate, Link } from '@tanstack/react-router'
+import { supabase } from '../../lib/supabase.ts'
 import { useAuth } from './hooks/useAuth.ts'
 
 export function LoginPage() {
@@ -16,7 +17,21 @@ export function LoginPage() {
     setSubmitting(true)
     try {
       await signIn(email, password)
-      await navigate({ to: '/' })
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('users')
+          .select('membership')
+          .eq('id', user.id)
+          .maybeSingle()
+        if (profile?.membership === 'socio_pendiente') {
+          await navigate({ to: '/tienda' })
+        } else {
+          await navigate({ to: '/' })
+        }
+      } else {
+        await navigate({ to: '/' })
+      }
     } catch (err) {
       setError((err as Error)?.message ?? 'Error al iniciar sesión')
     } finally {

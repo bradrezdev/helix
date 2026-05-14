@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
-import { MoreHorizontal, X, Star } from 'lucide-react'
+import { MoreHorizontal, X, Star, Info } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
 import { useAuth } from '../../auth/hooks/useAuth.ts'
 import { useProfile } from '../../auth/hooks/useProfile.ts'
 import { useKitEligibility } from '../../auth/hooks/useKitEligibility.ts'
@@ -271,11 +272,12 @@ function KitListView({
 }
 
 export function TiendaPage() {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const { profile } = useProfile(user?.id ?? '')
   const isAdmin = useIsAdmin(user?.id)
   const { hasKit, isLoading: kitLoading } = useKitEligibility(user?.id)
-  const { isKitMode, setKitMode, validateCart } = useCart()
+  const { isKitMode, setKitMode, validateCart, showKitFilter, setShowKitFilter } = useCart()
 
   const country: string = getCountryCurrency(profile?.country ?? 'MX')
   const membership: string = profile?.membership ?? 'socio'
@@ -354,15 +356,26 @@ export function TiendaPage() {
       {/* Header */}
       <div className="mb-5 flex items-start justify-between">
         <div>
-          <h1
-            className="text-2xl font-bold leading-tight"
-            style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}
-          >
-            Tienda
-          </h1>
-          <p className="text-xs mt-0.5" style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}>
-            {hasKit ? 'Catálogo completo' : 'Selecciona tu kit de inicio'}
-          </p>
+          {showKitFilter ? (
+            <h1
+              className="text-2xl font-bold leading-tight"
+              style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}
+            >
+              Selecciona tu Paquete de Inicio
+            </h1>
+          ) : (
+            <>
+              <h1
+                className="text-2xl font-bold leading-tight"
+                style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}
+              >
+                Tienda
+              </h1>
+              <p className="text-xs mt-0.5" style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}>
+                {hasKit ? 'Catálogo completo' : 'Selecciona tu kit de inicio'}
+              </p>
+            </>
+          )}
         </div>
 
         {/* Admin menu button */}
@@ -450,8 +463,35 @@ export function TiendaPage() {
         </div>
       )}
 
-      {/* Main content: admin bypass or bifurcate on hasKit */}
-      {isAdmin || hasKit ? (
+      {/* socio_pendiente banner */}
+      {membership === 'socio_pendiente' && (
+        <div
+          className="flex items-start gap-3 px-4 py-3 rounded-2xl mb-4"
+          style={{
+            background: '#062A63',
+            boxShadow: '0 4px 16px rgba(6,42,99,0.18)',
+          }}
+        >
+          <div className="shrink-0 mt-0.5">
+            <Info size={18} color="#fff" />
+          </div>
+          <p
+            className="text-sm leading-snug"
+            style={{ color: '#fff', fontFamily: 'Poppins, sans-serif' }}
+          >
+            ¡Ya casi eres Socio! Selecciona la Membresía de Socio para activar tu cuenta. También puedes añadir un Paquete de Inicio a tu compra.
+          </p>
+        </div>
+      )}
+
+      {/* Kit filter mode — show only kit products */}
+      {showKitFilter ? (
+        <KitListView
+          country={country}
+          membership={membership}
+          onKitSelect={(p) => setKitProduct(p)}
+        />
+      ) : isAdmin || hasKit ? (
         <>
           {/* Paquetes de Inicio section — admin only */}
           {isAdmin && (
@@ -465,6 +505,7 @@ export function TiendaPage() {
           {!isAdmin && membership === 'cliente_preferente' && (
             <MembresiaSection
               country={country}
+              membership={membership}
               onSelect={handleProductSelect}
             />
           )}
@@ -505,7 +546,15 @@ export function TiendaPage() {
           country={country}
           membership={membership}
           onClose={() => setKitProduct(null)}
-          onKitConfirmed={() => { setKitProduct(null); setCartOpen(true) }}
+          onKitConfirmed={() => {
+            setKitProduct(null)
+            if (showKitFilter) {
+              setShowKitFilter(false)
+              navigate({ to: '/checkout' })
+            } else {
+              setCartOpen(true)
+            }
+          }}
         />
       )}
 

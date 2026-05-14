@@ -55,7 +55,11 @@ async function checkMembership({ location }: { location: { pathname: string } })
     .eq('id', session.user.id)
     .maybeSingle()
   // Guard: if query fails (e.g. RLS recursion), don't block navigation
-  if (error || !profile) return
+  if (error) {
+    console.warn('[checkMembership] Supabase query failed:', error)
+    return
+  }
+  if (!profile) return
   // Admins bypass membership check — full access regardless of membership status
   if (profile?.is_admin) return
   if (
@@ -65,6 +69,23 @@ async function checkMembership({ location }: { location: { pathname: string } })
     !location.pathname.startsWith('/registro/')
   ) {
     throw redirect({ to: '/tienda' })
+  }
+}
+
+/**
+ * Block cliente_preferente from register page.
+ * Public (no session) allowed. socio/socio_pendiente allowed. CP → redirect /.
+ */
+async function requireSocio() {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return  // public access allowed
+  const { data: profile } = await supabase
+    .from('users')
+    .select('membership')
+    .eq('id', session.user.id)
+    .maybeSingle()
+  if (profile?.membership === 'cliente_preferente') {
+    throw redirect({ to: '/' })
   }
 }
 
@@ -102,6 +123,7 @@ const loginRoute = createRoute({
 const registerRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/register',
+  beforeLoad: requireSocio,
   validateSearch: (search: Record<string, unknown>) => ({
     sponsor: search.sponsor ? String(search.sponsor) : undefined,
     locked: search.locked === 'true' || search.locked === true,
@@ -143,6 +165,7 @@ const dashboardRoute = createRoute({
 const networkRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/red',
+  beforeLoad: requireNotCP,
   component: NegocioPage,
 })
 
@@ -218,12 +241,14 @@ const pedidosRedirectRoute = createRoute({
 const simuladorRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/simulador',
+  beforeLoad: requireNotCP,
   component: SimuladorPage,
 })
 
 const viajeRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/viaje',
+  beforeLoad: requireNotCP,
   component: LtpPage,
 })
 
@@ -236,12 +261,14 @@ const herramientasRedirectRoute = createRoute({
 const retirosRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/retiros',
+  beforeLoad: requireNotCP,
   component: RetirosPage,
 })
 
 const billeteraRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/billetera',
+  beforeLoad: requireNotCP,
   component: BilleteraPage,
 })
 
@@ -262,12 +289,14 @@ const gananciasRoute = createRoute({
 const gananciasBonoRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/ganancias/$bonoType',
+  beforeLoad: requireNotCP,
   component: () => <BonoDetail />,
 })
 
 const historialVolumenRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/historial-volumen',
+  beforeLoad: requireNotCP,
   component: () => <HistorialVolumenPage />,
 })
 

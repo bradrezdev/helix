@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ShoppingCart, X, Plus, Minus, Trash2, ArrowRight } from 'lucide-react'
+import { ShoppingCart, X, Plus, Minus, Trash2, ArrowRight, Gift } from 'lucide-react'
 import { toast } from 'sonner'
 import { useCart } from './store.ts'
 import { useNavigate } from '@tanstack/react-router'
@@ -16,10 +16,11 @@ export function CartSheet({
   country?: string
   membership?: string
 }) {
-  const { items, increment, decrement, total, totalPV, count, validateCart, isKitMode } = useCart()
+  const { items, increment, decrement, total, totalPV, count, validateCart, isKitMode, setShowKitFilter } = useCart()
   const navigate = useNavigate()
   const { data: freshProducts = [] } = useStoreProducts()
   const [removedToast, setRemovedToast] = useState(false)
+  const [showKitUpsell, setShowKitUpsell] = useState(false)
   const validatedRef = useRef(false)
 
   // Validate cart on open (once per mount)
@@ -215,7 +216,16 @@ export function CartSheet({
             </span>
           </div>
           <button
-            onClick={() => { onClose(); navigate({ to: '/checkout' }) }}
+            onClick={() => {
+              const hasMembership = items.some(i => i.product.kit_type === 'membresia')
+              const hasKitProduct = items.some(i => i.product.is_kit)
+              if (hasMembership && !hasKitProduct) {
+                setShowKitUpsell(true)
+              } else {
+                onClose()
+                navigate({ to: '/checkout' })
+              }
+            }}
             className="w-full py-4 rounded-full flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
             style={{ background: '#062A63' }}
           >
@@ -226,6 +236,69 @@ export function CartSheet({
           </button>
         </div>
       </div>
+
+      {/* Kit upsell AlertDialog */}
+      {showKitUpsell && (
+        <>
+          <div
+            className="fixed inset-0 z-[1100]"
+            style={{ background: 'rgba(6,42,99,0.4)', backdropFilter: 'blur(4px)' }}
+            onClick={() => setShowKitUpsell(false)}
+          />
+          <div
+            className="fixed left-[16px] right-[16px] top-1/2 -translate-y-1/2 z-[1101] rounded-[32px] overflow-hidden"
+            style={{
+              background: '#fff',
+              boxShadow: '0 10px 40px rgba(6,42,99,0.2)',
+            }}
+          >
+            <div className="flex flex-col items-center pt-8 px-6 pb-2 text-center">
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
+                style={{ background: 'rgba(12,188,229,0.12)' }}
+              >
+                <Gift size={28} style={{ color: '#0CBCE5' }} />
+              </div>
+              <h2
+                className="text-lg font-bold leading-tight mb-2"
+                style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}
+              >
+                ¿Quieres añadir un Paquete de Inicio?
+              </h2>
+              <p
+                className="text-sm leading-snug max-w-[280px]"
+                style={{ color: '#6B7280', fontFamily: 'Poppins, sans-serif' }}
+              >
+                Aprovecha tu registro para comenzar con tu kit de productos ONANO. Puedes añadirlo ahora o comprarlo después.
+              </p>
+            </div>
+            <div className="px-6 pt-4 pb-6 flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  setShowKitUpsell(false)
+                  setShowKitFilter(true)
+                  onClose()
+                }}
+                className="w-full py-4 rounded-full font-semibold text-sm active:scale-[0.98] transition-transform"
+                style={{ background: '#062A63', color: '#fff', fontFamily: 'Poppins, sans-serif' }}
+              >
+                Añadir Paquete de Inicio
+              </button>
+              <button
+                onClick={() => {
+                  setShowKitUpsell(false)
+                  onClose()
+                  navigate({ to: '/checkout' })
+                }}
+                className="w-full py-4 rounded-full font-semibold text-sm active:scale-[0.98] transition-transform"
+                style={{ background: '#F2F4F9', color: '#062A63', fontFamily: 'Poppins, sans-serif' }}
+              >
+                Continuar sin kit
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </>
   )
 }

@@ -36,10 +36,12 @@ export function RegisterPage() {
   }, [prefillSponsor, authLoading, user])
 
   async function handleSuccess() {
-    if (isAdminUser) {
+    if (user) {
+      // Authenticated user (admin/socio) — show success, keep session
       setRegistered(true)
     } else {
-      await navigate({ to: '/login' })
+      // Public registration — redirect to tienda for membership purchase
+      await navigate({ to: '/tienda' })
     }
   }
 

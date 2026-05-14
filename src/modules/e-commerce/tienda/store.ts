@@ -20,6 +20,7 @@ interface CartStore {
   isKitMode: boolean
   kitType: string | null
   purchaseCompleted: boolean
+  showKitFilter: boolean
   add: (product: Product) => AddResult
   remove: (code: string) => void
   increment: (code: string) => IncrementResult
@@ -33,6 +34,7 @@ interface CartStore {
   count: () => number
   markPurchaseCompleted: () => void
   resetPurchaseFlag: () => void
+  setShowKitFilter: (val: boolean) => void
 }
 
 export const useCart = create<CartStore>()(
@@ -42,6 +44,7 @@ export const useCart = create<CartStore>()(
   isKitMode: false,
   kitType: null,
   purchaseCompleted: false,
+  showKitFilter: false,
 
   add: (product) => {
     const state = get()
@@ -187,6 +190,7 @@ export const useCart = create<CartStore>()(
 
   markPurchaseCompleted: () => set({ purchaseCompleted: true }),
   resetPurchaseFlag: () => set({ purchaseCompleted: false }),
+  setShowKitFilter: (val) => set({ showKitFilter: val }),
     }),
     { name: 'helix-cart' }
   )
