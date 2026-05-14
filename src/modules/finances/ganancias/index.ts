@@ -1,1 +1,1 @@
-export { GananciasPage } from './GananciasPage'
+export { default as GananciasPage } from './GananciasPage'

@@ -1,1 +1,1 @@
-export { ComisionesNivelPage } from './ComisionesNivelPage'
+export { default as ComisionesNivelPage } from './ComisionesNivelPage'
