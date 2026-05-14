@@ -491,7 +491,7 @@ export function TiendaPage() {
           membership={membership}
           onKitSelect={(p) => setKitProduct(p)}
         />
-      ) : isAdmin || hasKit ? (
+      ) : isAdmin || hasKit || membership === 'socio_pendiente' || membership === 'cliente_preferente' ? (
         <>
           {/* Paquetes de Inicio section — admin only */}
           {isAdmin && (
@@ -505,7 +505,6 @@ export function TiendaPage() {
           {!isAdmin && (membership === 'cliente_preferente' || membership === 'socio_pendiente') && (
             <MembresiaSection
               country={country}
-              membership={membership}
               onSelect={handleProductSelect}
             />
           )}

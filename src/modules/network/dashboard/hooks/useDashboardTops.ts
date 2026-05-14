@@ -39,7 +39,22 @@ export function useTopRankos(
         .not('rank', 'is', null)
 
       if (!isAdmin) {
-        query = query.or(`sponsor_id.eq.${userNumId},unilevel_parent_id.eq.${userId}`)
+        // Split mixed-type .or() — sponsor_id is BIGINT, unilevel_parent_id is UUID
+        const [directsResult, unilevelResult] = await Promise.all([
+          supabase.from('users').select('id, name, rank, personal_pv').eq('sponsor_id', userNumId).not('rank', 'is', null).limit(50),
+          supabase.from('users').select('id, name, rank, personal_pv').eq('unilevel_parent_id', userId).not('rank', 'is', null).limit(50),
+        ])
+        const merged = [...(directsResult.data || []), ...(unilevelResult.data || [])]
+        const deduped = Array.from(new Map(merged.map((u: TopRankUser) => [u.id, u])).values())
+        const rows = deduped
+          .sort((a, b) => {
+            const ai = RANK_ORDER.indexOf(a.rank ?? '')
+            const bi = RANK_ORDER.indexOf(b.rank ?? '')
+            if (bi !== ai) return bi - ai
+            return (b.personal_pv ?? 0) - (a.personal_pv ?? 0)
+          })
+          .slice(0, 10)
+        return rows as TopRankUser[]
       }
 
       const { data, error } = await query.limit(50)
@@ -124,17 +139,26 @@ export function useTopConsumers(
       // Fetch user info for matching users
       const userIds = Array.from(pvByUserId.keys())
 
-      let usersQuery = supabase
-        .from('users')
-        .select('id, name, rank')
-        .in('id', userIds)
+      let usersData: { id: string; name: string; rank: string | null }[] = []
 
       if (!isAdmin) {
-        usersQuery = usersQuery.or(`sponsor_id.eq.${userNumId},id.eq.${userId}`)
+        // Split mixed-type .or() — sponsor_id is BIGINT, id is UUID
+        const [directsResult, selfResult] = await Promise.all([
+          supabase.from('users').select('id, name, rank').in('id', userIds).eq('sponsor_id', userNumId),
+          supabase.from('users').select('id, name, rank').in('id', userIds).eq('id', userId),
+        ])
+        const merged = [...(directsResult.data || []), ...(selfResult.data || [])]
+        usersData = Array.from(new Map(merged.map((u) => [u.id, u])).values()) as { id: string; name: string; rank: string | null }[]
+      } else {
+        const { data, error: usersError } = await supabase
+          .from('users')
+          .select('id, name, rank')
+          .in('id', userIds)
+        if (usersError) throw usersError
+        usersData = (data ?? []) as { id: string; name: string; rank: string | null }[]
       }
 
-      const { data: usersData, error: usersError } = await usersQuery
-      if (usersError) throw usersError
+      return usersData
 
       return ((usersData ?? []) as { id: string; name: string; rank: string | null }[])
         .map((u) => ({
@@ -196,17 +220,24 @@ export function useTopRecruiters(
 
       const sponsorIds = Array.from(countBySponsor.keys())
 
-      let sponsorsQuery = supabase
-        .from('users')
-        .select('id, user_id, name, rank')
-        .in('user_id', sponsorIds)
+      let sponsorsData: { id: string; user_id: number; name: string; rank: string | null }[] = []
 
       if (!isAdmin) {
-        sponsorsQuery = sponsorsQuery.or(`id.eq.${userId},sponsor_id.eq.${userNumId}`)
+        // Split mixed-type .or() — id is UUID, sponsor_id is BIGINT
+        const [selfResult, directsResult] = await Promise.all([
+          supabase.from('users').select('id, user_id, name, rank').in('user_id', sponsorIds).eq('id', userId),
+          supabase.from('users').select('id, user_id, name, rank').in('user_id', sponsorIds).eq('sponsor_id', userNumId),
+        ])
+        const merged = [...(selfResult.data || []), ...(directsResult.data || [])]
+        sponsorsData = Array.from(new Map(merged.map((u) => [u.id, u])).values()) as { id: string; user_id: number; name: string; rank: string | null }[]
+      } else {
+        const { data, error: sponsorsError } = await supabase
+          .from('users')
+          .select('id, user_id, name, rank')
+          .in('user_id', sponsorIds)
+        if (sponsorsError) throw sponsorsError
+        sponsorsData = (data ?? []) as { id: string; user_id: number; name: string; rank: string | null }[]
       }
-
-      const { data: sponsorsData, error: sponsorsError } = await sponsorsQuery
-      if (sponsorsError) throw sponsorsError
 
       return ((sponsorsData ?? []) as { id: string; user_id: number; name: string; rank: string | null }[])
         .map((u) => ({

@@ -3,7 +3,7 @@ import { ShoppingBag, Bell, CircleUser } from 'lucide-react'
 import { useCart } from '../modules/e-commerce/tienda/store.ts'
 import { ProfileSheet } from '../modules/auth/components/ProfileSheet.tsx'
 import { CartSheet } from '../modules/e-commerce/tienda/CartSheet.tsx'
-import { useLocation } from '@tanstack/react-router'
+import { useLocation, useNavigate } from '@tanstack/react-router'
 
 interface TopBarProps {
   className?: string
@@ -14,6 +14,7 @@ export default function TopBar({ className }: TopBarProps) {
   const [profileOpen, setProfileOpen] = useState(false)
   const { count } = useCart()
   const location = useLocation()
+  const navigate = useNavigate()
 
   const cartCount = count()
   const isCheckout = location.pathname === '/checkout'
@@ -57,7 +58,7 @@ export default function TopBar({ className }: TopBarProps) {
       </div>
 
       {/* Sheets */}
-      {cartOpen && <CartSheet onClose={() => setCartOpen(false)} />}
+      {cartOpen && <CartSheet onClose={() => setCartOpen(false)} onCheckout={() => navigate({ to: '/checkout' })} />}
       <ProfileSheet open={profileOpen} onClose={() => setProfileOpen(false)} />
     </>
   )
