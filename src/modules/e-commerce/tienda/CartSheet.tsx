@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { ShoppingCart, X, Plus, Minus, Trash2, ArrowRight, Gift } from 'lucide-react'
 import { toast } from 'sonner'
 import { useCart } from './store.ts'
-import { useNavigate } from '@tanstack/react-router'
+
 import { useStoreProducts } from './hooks/useStoreProducts.ts'
 import { getProductPrice } from './utils/pricing.ts'
+import { useTaxRate } from './hooks/useTaxRate.ts'
 import { formatAmount } from '../../../lib/formatters.ts'
 
 export function CartSheet({
@@ -17,8 +18,11 @@ export function CartSheet({
   membership?: string
 }) {
   const { items, increment, decrement, total, totalPV, count, validateCart, isKitMode, setShowKitFilter } = useCart()
-  const navigate = useNavigate()
   const { data: freshProducts = [] } = useStoreProducts()
+  const { rate: taxRate } = useTaxRate(country)
+  const subtotal = total()
+  const taxAmount = subtotal * taxRate
+  const grandTotal = subtotal + taxAmount
   const [removedToast, setRemovedToast] = useState(false)
   const [showKitUpsell, setShowKitUpsell] = useState(false)
   const validatedRef = useRef(false)
@@ -207,23 +211,41 @@ export function CartSheet({
             paddingBottom: 16,
           }}
         >
-          <div className="flex justify-between items-center mb-3">
-            <span className="text-sm" style={{ color: '#6B7280', fontFamily: 'Poppins, sans-serif' }}>
-              Total · {totalPV().toFixed(0)} PV
-            </span>
-            <span className="text-lg font-bold" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
-              {formatAmount(total(), country)}
-            </span>
+          <div className="flex flex-col gap-1.5 mb-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm" style={{ color: '#6B7280', fontFamily: 'Poppins, sans-serif' }}>
+                Subtotal · {totalPV().toFixed(0)} PV
+              </span>
+              <span className="text-sm" style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}>
+                {formatAmount(subtotal, country)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm" style={{ color: '#6B7280', fontFamily: 'Poppins, sans-serif' }}>
+                Impuesto ({(taxRate * 100).toFixed(0)}%)
+              </span>
+              <span className="text-sm" style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}>
+                {formatAmount(taxAmount, country)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center border-t pt-1.5" style={{ borderColor: '#EAECF0' }}>
+              <span className="text-sm font-semibold" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
+                Total
+              </span>
+              <span className="text-lg font-bold" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
+                {formatAmount(grandTotal, country)}
+              </span>
+            </div>
           </div>
           <button
             onClick={() => {
               const hasMembership = items.some(i => i.product.kit_type === 'membresia')
-              const hasKitProduct = items.some(i => i.product.is_kit)
-              if (hasMembership && !hasKitProduct) {
+              const hasRealKit = items.some(i => i.product.is_kit && i.product.kit_type !== 'membresia')
+              if (hasMembership && !hasRealKit) {
                 setShowKitUpsell(true)
               } else {
+                window.location.href = '/checkout'
                 onClose()
-                navigate({ to: '/checkout' })
               }
             }}
             className="w-full py-4 rounded-full flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
@@ -275,8 +297,8 @@ export function CartSheet({
             <div className="px-6 pt-4 pb-6 flex flex-col gap-2">
               <button
                 onClick={() => {
-                  setShowKitUpsell(false)
                   setShowKitFilter(true)
+                  setShowKitUpsell(false)
                   onClose()
                 }}
                 className="w-full py-4 rounded-full font-semibold text-sm active:scale-[0.98] transition-transform"
@@ -287,8 +309,8 @@ export function CartSheet({
               <button
                 onClick={() => {
                   setShowKitUpsell(false)
+                  window.location.href = '/checkout'
                   onClose()
-                  navigate({ to: '/checkout' })
                 }}
                 className="w-full py-4 rounded-full font-semibold text-sm active:scale-[0.98] transition-transform"
                 style={{ background: '#F2F4F9', color: '#062A63', fontFamily: 'Poppins, sans-serif' }}
