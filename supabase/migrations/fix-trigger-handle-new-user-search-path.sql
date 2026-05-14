@@ -28,7 +28,7 @@ BEGIN
     COALESCE(NEW.raw_user_meta_data->>'name', 'Usuario'),
     COALESCE(NEW.raw_user_meta_data->>'apellidos', ''),
     NEW.email,
-    v_membership,
+    v_membership::membership_type,  -- cast text → enum
     v_sponsor_id,
     COALESCE(NEW.raw_user_meta_data->>'country', 'MX'),
     v_gender,
