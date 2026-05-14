@@ -23,7 +23,7 @@ export function getVisibleProducts(
 
   return allProducts.filter((p) => {
     if (p.status === 'no_disponible' || p.status === 'agotado') return false
-    if (p.category === 'membership' && user.membership !== 'cliente_preferente') return false
+    if (p.category === 'membership' && user.membership === 'socio') return false
     if (p.is_kit && hasPurchasedKit) return false
     if (user.membership === 'cliente_preferente' && !p.is_kit && p.category !== 'membership')
       return false

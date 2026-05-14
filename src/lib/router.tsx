@@ -51,9 +51,11 @@ async function checkMembership({ location }: { location: { pathname: string } })
   if (!session) return
   const { data: profile } = await supabase
     .from('users')
-    .select('membership')
+    .select('membership, is_admin')
     .eq('id', session.user.id)
     .maybeSingle()
+  // Admins bypass membership check — full access regardless of membership status
+  if (profile?.is_admin) return
   if (
     (profile?.membership === 'socio_pendiente' || !profile?.membership) &&
     location.pathname !== '/tienda' &&
