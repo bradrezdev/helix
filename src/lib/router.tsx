@@ -98,11 +98,10 @@ const loginRoute = createRoute({
   component: LoginPage,
 })
 
-// /register — para usuario autenticado que registra a alguien (locked, sin leyenda patrocinador)
+// /register — link de referido público (con o sin sponsor en URL)
 const registerRoute = createRoute({
-  getParentRoute: () => authenticatedRoute,
+  getParentRoute: () => rootRoute,
   path: '/register',
-  beforeLoad: requireNotCP,
   validateSearch: (search: Record<string, unknown>) => ({
     sponsor: search.sponsor ? String(search.sponsor) : undefined,
     locked: search.locked === 'true' || search.locked === true,
@@ -110,7 +109,7 @@ const registerRoute = createRoute({
   component: RegisterPage,
 })
 
-// /registro/:username — link de referido público (locked, muestra leyenda "patrocinado por")
+// /registro/:username — link de referido público (legacy, locked, muestra "patrocinado por")
 const registerByLinkRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/registro/$username',
@@ -287,6 +286,7 @@ const supportRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   loginRoute,
+  registerRoute,
   registerByLinkRoute,
   authenticatedRoute.addChildren([
     dashboardRoute,
@@ -298,7 +298,6 @@ const routeTree = rootRoute.addChildren([
     checkoutRoute,
     paymentMethodsRoute,
     addressesRoute,
-    registerRoute,
     adminRoute,
     adminOrdenesRoute,
     pedidosRedirectRoute,

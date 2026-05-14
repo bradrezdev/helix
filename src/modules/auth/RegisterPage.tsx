@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
+import { supabase } from '../../lib/supabase.ts'
 import { useAuth } from './hooks/useAuth.ts'
 import { useProfile } from './hooks/useProfile.ts'
 import { RegisterForm } from './components/RegisterForm.tsx'
@@ -7,31 +8,45 @@ import { RegisterForm } from './components/RegisterForm.tsx'
 export function RegisterPage() {
   const navigate = useNavigate()
   const search = useSearch({ strict: false }) as { sponsor?: string; locked?: boolean }
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const { data: profile } = useProfile(user?.id ?? '')
   const [registered, setRegistered] = useState(false)
+  const [sponsorName, setSponsorName] = useState<string | null>(null)
 
   const prefillSponsor = search?.sponsor ?? ''
   const isLocked = search?.locked === true
 
-  // When locked=true and no sponsor in URL, auto-fill with authenticated user's user_id
-  const [resolvedPrefill, setResolvedPrefill] = useState(prefillSponsor)
-
-  useEffect(() => {
-    if (isLocked && !prefillSponsor && profile?.user_id) {
-      setResolvedPrefill(String(profile.user_id))
-    }
-  }, [isLocked, prefillSponsor, profile?.user_id])
-
+  // Resolve sponsor: from URL param, or from authenticated user's own ID when locked
+  const resolvedPrefill = prefillSponsor || (isLocked && profile?.user_id ? String(profile.user_id) : '')
   const isAdminUser = profile?.is_admin === true
+
+  // For public referrer link: fetch sponsor name from URL param for display
+  useEffect(() => {
+    if (prefillSponsor && !authLoading && !user) {
+      supabase
+        .from('users')
+        .select('name, apellidos')
+        .eq('user_id', Number(prefillSponsor))
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) setSponsorName(`${data.name} ${data.apellidos}`)
+        })
+        .catch(() => {})
+    }
+  }, [prefillSponsor, authLoading, user])
 
   async function handleSuccess() {
     if (isAdminUser) {
       setRegistered(true)
     } else {
-      await navigate({ to: '/' })
+      await navigate({ to: '/login' })
     }
   }
+
+  // Build subtitle
+  let subtitle = 'Crea tu cuenta de distribuidor'
+  if (sponsorName) subtitle = `Patrocinado por ${sponsorName}`
+  else if (isLocked && profile?.name) subtitle = `Siendo registrado por ${profile.name}`
 
   if (registered) {
     return (
@@ -45,24 +60,32 @@ export function RegisterPage() {
               ✅ Registro exitoso
             </p>
             <p className="text-sm mt-2" style={{ color: '#6B7280', fontFamily: 'Poppins, sans-serif' }}>
-              El nuevo distribuidor fue registrado correctamente.
+              {sponsorName
+                ? 'Tu cuenta ha sido creada correctamente.'
+                : 'El nuevo distribuidor fue registrado correctamente.'}
             </p>
           </div>
-          <button
-            onClick={() => navigate({ to: '/red' })}
-            className="w-full rounded-full py-3.5 text-sm font-semibold text-white transition-all active:scale-[0.98]"
-            style={{ background: '#062A63', fontFamily: 'Poppins, sans-serif' }}
-          >
-            Ver organización
-          </button>
+          {isAdminUser ? (
+            <button
+              onClick={() => navigate({ to: '/red' })}
+              className="w-full rounded-full py-3.5 text-sm font-semibold text-white transition-all active:scale-[0.98]"
+              style={{ background: '#062A63', fontFamily: 'Poppins, sans-serif' }}
+            >
+              Ver organización
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate({ to: '/login' })}
+              className="w-full rounded-full py-3.5 text-sm font-semibold text-white transition-all active:scale-[0.98]"
+              style={{ background: '#062A63', fontFamily: 'Poppins, sans-serif' }}
+            >
+              Iniciar sesión
+            </button>
+          )}
         </div>
       </div>
     )
   }
-
-  const subtitle = isLocked && profile?.name
-    ? `Siendo registrado por ${profile.name}`
-    : 'Crea tu cuenta de distribuidor'
 
   return (
     <div className="min-h-screen bg-[#F2F4F9] flex items-start justify-center px-4 py-8">
