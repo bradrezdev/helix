@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/modules/auth/hooks/useAuth'
+import { supabase } from '../../../../lib/supabase.ts'
+import { useAuth } from '../../../auth/hooks/useAuth'
 
 export function usePurchasedKits() {
   const { user } = useAuth()
