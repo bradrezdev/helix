@@ -9,7 +9,7 @@ export interface CartItem {
 
 export type AddResult =
   | { ok: true }
-  | { ok: false; reason: 'kit_limit' | 'no_stock' | 'stock_exceeded' }
+  | { ok: false; reason: 'kit_limit' | 'no_stock' | 'stock_exceeded' | 'membership_limit' }
 
 export type IncrementResult =
   | { ok: true }
@@ -59,6 +59,11 @@ export const useCart = create<CartStore>()(
       return { ok: false, reason: 'stock_exceeded' }
     }
 
+    // Check if membership already in cart
+    if (product.kit_type === 'membresia' && state.items.some((item) => item.product.kit_type === 'membresia')) {
+      return { ok: false, reason: 'membership_limit' }
+    }
+
     // Kit limit: only 1 kit (non-membership) in kit mode
     if (state.isKitMode && product.is_kit && product.kit_type !== 'membresia') {
       const hasKit = state.items.some((i) => i.product.is_kit)
@@ -80,13 +85,7 @@ export const useCart = create<CartStore>()(
   },
 
   remove: (code) => {
-    const state = get()
-    const item = state.items.find((i) => i.product.code === code)
-    // In kit mode, removing the kit product clears entire cart
-    if (state.isKitMode && item?.product.is_kit) {
-      set({ items: [], isKitMode: false, kitType: null })
-      return
-    }
+    // Remove specific item — no cart clearing for kit mode
     set((s) => ({ items: s.items.filter((i) => i.product.code !== code) }))
   },
 
@@ -104,13 +103,7 @@ export const useCart = create<CartStore>()(
   },
 
   decrement: (code) => {
-    const state = get()
-    const item = state.items.find((i) => i.product.code === code)
-    // In kit mode, decrement-to-zero on kit item clears entire cart
-    if (state.isKitMode && item?.product.is_kit && item.quantity <= 1) {
-      set({ items: [], isKitMode: false, kitType: null })
-      return
-    }
+    // Decrement specific item — no cart clearing for kit mode
     set((s) => ({
       items: s.items
         .map((i) =>
@@ -152,15 +145,8 @@ export const useCart = create<CartStore>()(
       validItems.push({ ...item, product: fresh })
     }
 
-    const kitItemRemoved =
-      state.isKitMode && state.items.some((i) => i.product.is_kit) &&
-      !validItems.some((i) => i.product.is_kit)
-
-    if (kitItemRemoved) {
-      set({ items: [], isKitMode: false, kitType: null })
-    } else {
-      set({ items: validItems })
-    }
+    // Validate each item independently — no cart clearing for kit removal
+    set({ items: validItems })
 
     return { removedCodes }
   },

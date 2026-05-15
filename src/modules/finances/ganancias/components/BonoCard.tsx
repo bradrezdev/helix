@@ -12,18 +12,13 @@
 import { DollarSign } from 'lucide-react'
 import type { BonoGroup } from '../utils.ts'
 import { getBonoIcon } from '../constants.ts'
+import { formatCurrency } from '../../../../lib/formatters.ts'
 
 interface BonoCardProps {
   group: BonoGroup
   color: string
   onClick: () => void
 }
-
-const currency = new Intl.NumberFormat('es-MX', {
-  style: 'currency',
-  currency: 'MXN',
-  minimumFractionDigits: 2,
-})
 
 export default function BonoCard({ group, color, onClick }: BonoCardProps) {
   const Icon = getBonoIcon(group.key) ?? DollarSign
@@ -84,7 +79,7 @@ export default function BonoCard({ group, color, onClick }: BonoCardProps) {
 
         {/* Amount — large, bold, primary color */}
         <p className="text-2xl font-bold" style={{ color: '#062A63' }} data-testid={`bono-amount-${group.key}`}>
-          {currency.format(group.total)}
+          {formatCurrency(group.total, group.currency)}
         </p>
 
         {/* Transaction count — subtle metadata */}

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ArrowLeft, Wallet, CreditCard, CheckCircle2, Loader2, MapPin, Home, Building2, ChevronRight } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { useCart } from './store.ts'
 import { useAuth } from '../../auth/hooks/useAuth.ts'
 import { useProfile } from '../../auth/hooks/useProfile.ts'
@@ -28,6 +29,7 @@ interface OrderResult {
 
 export function CheckoutPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { items, total, totalPV, clear } = useCart()
   const { user } = useAuth()
   const { profile } = useProfile(user?.id ?? '')
@@ -58,17 +60,25 @@ export function CheckoutPage() {
   const taxAmount = cartTotal * taxRate
   const grandTotal = cartTotal + taxAmount
 
+  // Physical products need shipping; membership is virtual
+  const hasPhysicalProducts = items.some((item) => {
+    if (item.product.kit_type === 'membresia') return false
+    return true
+  })
+
   async function handleConfirmPayment() {
     if (!user) return
 
-    // Shipping guard
-    if (!shippingOption) {
-      setError('Selecciona una opción de envío')
-      return
-    }
-    if (shippingOption === 'cedi' && !selectedCedi) {
-      setError('Selecciona un CEDI')
-      return
+    // Shipping guard — only required for physical products
+    if (hasPhysicalProducts) {
+      if (!shippingOption) {
+        setError('Selecciona una opción de envío')
+        return
+      }
+      if (shippingOption === 'cedi' && !selectedCedi) {
+        setError('Selecciona un CEDI')
+        return
+      }
     }
 
     setLoading(true)
@@ -105,6 +115,8 @@ export function CheckoutPage() {
 
       setOrderResult(data as unknown as OrderResult)
       clear()
+      queryClient.invalidateQueries({ queryKey: ['profile', user.id] })
+      queryClient.invalidateQueries({ queryKey: ['kit-eligibility', user.id] })
       setStep('confirm')
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -255,93 +267,95 @@ export function CheckoutPage() {
           </div>
         </div>
 
-        {/* ── ENVÍO section ── */}
-        <div
-          className="rounded-[32px] p-4 mb-4"
-          style={{ background: '#fff', boxShadow: '0 2px 12px rgba(6,42,99,0.07)' }}
-        >
-          <p
-            className="text-xs font-semibold uppercase tracking-wide mb-3"
-            style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}
+        {/* ── ENVÍO section — only for physical products ── */}
+        {hasPhysicalProducts && (
+          <div
+            className="rounded-[32px] p-4 mb-4"
+            style={{ background: '#fff', boxShadow: '0 2px 12px rgba(6,42,99,0.07)' }}
           >
-            Envío
-          </p>
-          <div className="flex flex-col gap-2">
+            <p
+              className="text-xs font-semibold uppercase tracking-wide mb-3"
+              style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}
+            >
+              Envío
+            </p>
+            <div className="flex flex-col gap-2">
 
-            {/* Option A — Nueva dirección */}
-            <ShippingCard
-              selected={shippingOption === 'nueva'}
-              onSelect={() => setShippingOption('nueva')}
-              icon={<MapPin size={20} style={{ color: '#062A63' }} />}
-              title="Añadir nueva dirección"
-              subtitle="Ingresa una nueva dirección de entrega"
-              action={
-                shippingOption === 'nueva' ? (
-                  <button
-                    onClick={() => setShowNuevaDireccion(true)}
-                    className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full"
-                    style={{ background: '#062A63', color: '#fff', fontFamily: 'Poppins, sans-serif' }}
-                  >
-                    Configurar
-                    <ChevronRight size={13} color="#fff" />
-                  </button>
-                ) : null
-              }
-            />
+              {/* Option A — Nueva dirección */}
+              <ShippingCard
+                selected={shippingOption === 'nueva'}
+                onSelect={() => setShippingOption('nueva')}
+                icon={<MapPin size={20} style={{ color: '#062A63' }} />}
+                title="Añadir nueva dirección"
+                subtitle="Ingresa una nueva dirección de entrega"
+                action={
+                  shippingOption === 'nueva' ? (
+                    <button
+                      onClick={() => setShowNuevaDireccion(true)}
+                      className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full"
+                      style={{ background: '#062A63', color: '#fff', fontFamily: 'Poppins, sans-serif' }}
+                    >
+                      Configurar
+                      <ChevronRight size={13} color="#fff" />
+                    </button>
+                  ) : null
+                }
+              />
 
-            {/* Option B — Dirección predeterminada */}
-            <ShippingCard
-              selected={shippingOption === 'default'}
-              onSelect={() => setShippingOption('default')}
-              icon={<Home size={20} style={{ color: '#062A63' }} />}
-              title="Dirección predeterminada"
-              subtitle={
-                dirLoading
-                  ? 'Cargando...'
-                  : defaultDireccion
-                    ? `${defaultDireccion.nombre_completo} · ${defaultDireccion.calle_numero}, ${defaultDireccion.colonia}, ${defaultDireccion.municipio}, ${defaultDireccion.estado} CP ${defaultDireccion.codigo_postal}`
-                    : 'Sin dirección predeterminada — añade una'
-              }
-              subtitleColor={!dirLoading && !defaultDireccion ? '#9CA3AF' : undefined}
-              action={
-                shippingOption === 'default' && !dirLoading ? (
-                  <button
-                    onClick={() => setShowDireccionPicker(true)}
-                    className="text-xs font-semibold"
-                    style={{ color: '#0CBCE5', fontFamily: 'Poppins, sans-serif' }}
-                  >
-                    Cambiar
-                  </button>
-                ) : null
-              }
-            />
+              {/* Option B — Dirección predeterminada */}
+              <ShippingCard
+                selected={shippingOption === 'default'}
+                onSelect={() => setShippingOption('default')}
+                icon={<Home size={20} style={{ color: '#062A63' }} />}
+                title="Dirección predeterminada"
+                subtitle={
+                  dirLoading
+                    ? 'Cargando...'
+                    : defaultDireccion
+                      ? `${defaultDireccion.nombre_completo} · ${defaultDireccion.calle_numero}, ${defaultDireccion.colonia}, ${defaultDireccion.municipio}, ${defaultDireccion.estado} CP ${defaultDireccion.codigo_postal}`
+                      : 'Sin dirección predeterminada — añade una'
+                }
+                subtitleColor={!dirLoading && !defaultDireccion ? '#9CA3AF' : undefined}
+                action={
+                  shippingOption === 'default' && !dirLoading ? (
+                    <button
+                      onClick={() => setShowDireccionPicker(true)}
+                      className="text-xs font-semibold"
+                      style={{ color: '#0CBCE5', fontFamily: 'Poppins, sans-serif' }}
+                    >
+                      Cambiar
+                    </button>
+                  ) : null
+                }
+              />
 
-            {/* Option C — Recoger en CEDI */}
-            <ShippingCard
-              selected={shippingOption === 'cedi'}
-              onSelect={() => setShippingOption('cedi')}
-              icon={<Building2 size={20} style={{ color: '#062A63' }} />}
-              title="Recoger en CEDI"
-              subtitle={
-                selectedCedi
-                  ? `${selectedCedi.nombre} · ${selectedCedi.municipio}, ${selectedCedi.estado}`
-                  : 'Recoge tu pedido en nuestro centro de distribución'
-              }
-              action={
-                shippingOption === 'cedi' ? (
-                  <button
-                    onClick={() => setShowCediSelector(true)}
-                    className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full"
-                    style={{ background: '#062A63', color: '#fff', fontFamily: 'Poppins, sans-serif' }}
-                  >
-                    {selectedCedi ? 'Cambiar' : 'Seleccionar CEDI'}
-                    <ChevronRight size={13} color="#fff" />
-                  </button>
-                ) : null
-              }
-            />
+              {/* Option C — Recoger en CEDI */}
+              <ShippingCard
+                selected={shippingOption === 'cedi'}
+                onSelect={() => setShippingOption('cedi')}
+                icon={<Building2 size={20} style={{ color: '#062A63' }} />}
+                title="Recoger en CEDI"
+                subtitle={
+                  selectedCedi
+                    ? `${selectedCedi.nombre} · ${selectedCedi.municipio}, ${selectedCedi.estado}`
+                    : 'Recoge tu pedido en nuestro centro de distribución'
+                }
+                action={
+                  shippingOption === 'cedi' ? (
+                    <button
+                      onClick={() => setShowCediSelector(true)}
+                      className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full"
+                      style={{ background: '#062A63', color: '#fff', fontFamily: 'Poppins, sans-serif' }}
+                    >
+                      {selectedCedi ? 'Cambiar' : 'Seleccionar CEDI'}
+                      <ChevronRight size={13} color="#fff" />
+                    </button>
+                  ) : null
+                }
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Payment method */}
         <div

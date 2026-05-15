@@ -77,6 +77,15 @@ export function formatAmount(amount: number, country?: string | null): string {
   }).format(amount)
 }
 
+export function formatCurrency(amount: number, currencyCode: string = 'MXN'): string {
+  return new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: currencyCode,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)
+}
+
 // Bono type labels
 export const BONO_TYPE_LABELS: Record<string, string> = {
   patrocinio: 'Patrocinio',

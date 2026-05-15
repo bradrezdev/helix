@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth.ts'
 import { useProfile, useSponsor } from '../hooks/useProfile.ts'
 import { useNavigate } from '@tanstack/react-router'
 import { useCart } from '../../e-commerce/tienda/store.ts'
+import { useLayoutStore } from '../../../layouts/store.ts'
 
 interface ProfileSheetProps {
   open: boolean
@@ -64,6 +65,7 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
   async function handleSignOut() {
     onClose()
     useCart.getState().clear()
+    useLayoutStore.getState().reset()
     try {
       await signOut()
     } catch {
@@ -151,11 +153,21 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
                       style={{ fontFamily: 'Poppins, sans-serif' }}>Sponsor</span>
                     <span className="text-[14px] font-semibold text-[#062A63] max-w-[72px] truncate"
                       style={{ fontFamily: 'Poppins, sans-serif' }}>
-                      {profile?.sponsor_id ? 'X' : '—'}
+                      {profile?.sponsor_id
+                        ? sponsorLoading
+                          ? <span className="text-[12px] text-gray-400">Cargando...</span>
+                          : (sponsor?.name ?? '—')
+                        : '—'}
                     </span>
                   </div>
                 </div>
                 <DetailRow label="Nombre" value={profile?.name ?? ''} />
+                <DetailRow label="Apellidos" value={profile?.apellidos ?? ''} />
+                <DetailRow label="Email" value={profile?.email ?? ''} />
+                <DetailRow label="País" value={profile?.country ?? ''} />
+                <DetailRow label="Género" value={profile?.gender ?? ''} />
+                <DetailRow label="Membresía" value={profile?.membership ?? ''} />
+                <DetailRow label="Link de referido" value={profile?.link_referido ?? ''} />
                 <DetailRow
                   label="Fecha de registro"
                   value={

@@ -6,6 +6,7 @@ import { useProfile } from '../../auth/hooks/useProfile.ts'
 import { useKitEligibility } from '../../auth/hooks/useKitEligibility.ts'
 import { useStoreProducts } from './hooks/useStoreProducts.ts'
 import { useProductWhitelist } from './hooks/useProductWhitelist.ts'
+import { usePurchasedKits } from './hooks/usePurchasedKits.ts'
 import { useCart } from './store.ts'
 import type { Product } from './hooks/useProducts.ts'
 import { ProductSheet } from './ProductSheet.tsx'
@@ -194,6 +195,8 @@ function KitListView({
   onKitSelect: (product: Product) => void
 }) {
   const { data: kitProducts = [], isLoading } = useStoreProducts({ kitOnly: true })
+  const { data: purchasedCodes = [] } = usePurchasedKits()
+  const availableKits = kitProducts.filter((k) => !purchasedCodes.includes(k.code))
 
   if (isLoading) {
     return (
@@ -211,7 +214,7 @@ function KitListView({
 
   return (
     <div className="grid grid-cols-2 gap-3">
-      {kitProducts.map((product) => (
+      {availableKits.map((product) => (
         <button
           key={product.code}
           onClick={() => onKitSelect(product)}
@@ -501,8 +504,8 @@ export function TiendaPage() {
               onKitSelect={(p) => setKitProduct(p)}
             />
           )}
-          {/* Membresía section — for cliente_preferente and socio_pendiente */}
-          {!isAdmin && (membership === 'cliente_preferente' || membership === 'socio_pendiente') && (
+          {/* Membresía section — for cliente_preferente and socio_pendiente, hidden after upgrade to socio */}
+          {!isAdmin && (membership === 'cliente_preferente' || membership === 'socio_pendiente') && membership !== 'socio' && (
             <MembresiaSection
               country={country}
               onSelect={handleProductSelect}

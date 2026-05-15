@@ -8,6 +8,7 @@ export interface BonoGroup {
   total: number      // sum of all amounts for this bonus type
   count: number      // number of commission transactions
   percentage: number // percentage of grand total (0–100)
+  currency: string   // currency code from commissions
 }
 
 /**
@@ -15,7 +16,7 @@ export interface BonoGroup {
  * Sorted descending by total.
  */
 export function aggregateByGroup(commissions: Commission[]): BonoGroup[] {
-  const map = new Map<string, { total: number; count: number }>()
+  const map = new Map<string, { total: number; count: number; currency: string }>()
 
   for (const c of commissions) {
     const existing = map.get(c.bono_type)
@@ -23,17 +24,18 @@ export function aggregateByGroup(commissions: Commission[]): BonoGroup[] {
       existing.total += c.amount
       existing.count += 1
     } else {
-      map.set(c.bono_type, { total: c.amount, count: 1 })
+      map.set(c.bono_type, { total: c.amount, count: 1, currency: c.currency })
     }
   }
 
   const grandTotal = [...map.values()].reduce((sum, g) => sum + g.total, 0)
 
   return [...map.entries()]
-    .map(([key, { total, count }]) => ({
+    .map(([key, { total, count, currency }]) => ({
       key,
       total,
       count,
+      currency,
       percentage: grandTotal > 0 ? Math.round((total / grandTotal) * 100) : 0,
     }))
     .sort((a, b) => b.total - a.total)

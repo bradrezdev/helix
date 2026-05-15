@@ -1,10 +1,12 @@
 import { useParams, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, ExternalLink } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Package } from 'lucide-react'
 import { useAuth } from '../../auth/hooks/useAuth.ts'
 import { useProfile } from '../../auth/hooks/useProfile.ts'
 import { useIsAdmin } from '../../admin/hooks/useAdmin.ts'
 import { useOrderDetail } from './hooks/useOrderDetail.ts'
+import type { OrderDetailItem } from './hooks/useOrderDetail.ts'
 import { useTaxRate } from '../tienda/hooks/useTaxRate.ts'
+import { getCountryCurrency } from '../tienda/utils/pricing.ts'
 import { PDFDropdownButton } from './components/PDFDropdownButton.tsx'
 import { ProductCard } from './components/ProductCard.tsx'
 import { AuditarSection } from './components/AuditarSection.tsx'
@@ -63,6 +65,30 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   )
 }
 
+// ─── Group order items into parent/child hierarchy ────────────────────────────
+
+interface ItemGroup {
+  parent: OrderDetailItem
+  children: OrderDetailItem[]
+}
+
+function groupOrderItems(items: OrderDetailItem[]): ItemGroup[] {
+  const parents = items.filter((i) => i.is_kit)
+  const children = items.filter((i) => !i.is_kit)
+
+  if (parents.length === 0) {
+    // No kit parents — all items are standalone
+    return children.map((item) => ({ parent: item, children: [] }))
+  }
+
+  // Distribute children — all non-kit items go under the last kit parent
+  const groups: ItemGroup[] = parents.map((p) => ({ parent: p, children: [] }))
+  if (children.length > 0) {
+    groups[groups.length - 1].children = children
+  }
+  return groups
+}
+
 // ─── OrdenDetailPage ──────────────────────────────────────────────────────────
 
 export function OrdenDetailPage() {
@@ -73,9 +99,12 @@ export function OrdenDetailPage() {
   const isAdmin = useIsAdmin()
   const { data, loading, error } = useOrderDetail(orderId)
 
-  // Derive country from order (available after data loads) or fall back to 'MXN'
-  const orderCountry = data?.order.country ?? 'MXN'
-  const { rate: taxRate, label: taxLabel } = useTaxRate(orderCountry)
+  // Derive country from order with profile fallback
+  // If order.country is 'USD' (default) but user is MX, use profile country
+  const rawCountry = data?.order.country
+  const displayCountry = rawCountry && rawCountry !== 'USD' ? rawCountry : profile?.country ?? 'MXN'
+  const currency = getCountryCurrency(displayCountry)
+  const { rate: taxRate, label: taxLabel } = useTaxRate(displayCountry)
 
   // ── Loading ──────────────────────────────────────────────────────────────────
   if (loading) {
@@ -111,6 +140,9 @@ export function OrdenDetailPage() {
   }
 
   const { order, items, shipment, commissions, shippingLabel, cediName } = data
+
+  // ── Group items hierarchically (kit parents → child components) ──────────────
+  const groupedItems = groupOrderItems(items)
 
   // ── Tax + totals calculation ──────────────────────────────────────────────────
   const subtotal = items.reduce((sum, item) => sum + item.total_amount, 0)
@@ -182,7 +214,7 @@ export function OrdenDetailPage() {
             className="font-semibold"
             style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif', fontSize: '24px' }}
           >
-            {formatAmount(computedTotal, order.country)}
+            {formatAmount(computedTotal, currency)}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <span
@@ -303,8 +335,19 @@ export function OrdenDetailPage() {
                 No hay artículos en esta orden
               </p>
             ) : (
-              items.map((item) => (
-                <ProductCard key={item.id} item={item} country={order.country} />
+              groupedItems.map((group) => (
+                <div key={group.parent.id} className="space-y-2">
+                  {/* Parent item (kit or membership) */}
+                  <ProductCard item={group.parent} country={currency} />
+                  {/* Child component items indented under parent */}
+                  {group.children.length > 0 && (
+                    <div className="ml-4 pl-3 space-y-2" style={{ borderLeft: '2px solid #EAECF0' }}>
+                      {group.children.map((child) => (
+                        <ProductCard key={child.id} item={child} country={currency} />
+                      ))}
+                    </div>
+                  )}
+                </div>
               ))
             )}
           </div>
@@ -320,18 +363,18 @@ export function OrdenDetailPage() {
         >
           <DetailRow
             label="Subtotal"
-            value={formatAmount(subtotal, order.country)}
+            value={formatAmount(subtotal, currency)}
           />
           {shippingCost > 0 && (
             <DetailRow
               label="Envio"
-              value={formatAmount(shippingCost, order.country)}
+              value={formatAmount(shippingCost, currency)}
             />
           )}
           {taxRate > 0 && (
             <DetailRow
               label={`${taxLabel} (${(taxRate * 100).toFixed(0)}%)`}
-              value={formatAmount(taxAmount, order.country)}
+              value={formatAmount(taxAmount, currency)}
             />
           )}
           <div
@@ -348,7 +391,7 @@ export function OrdenDetailPage() {
               className="text-sm font-bold text-right"
               style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}
             >
-              {formatAmount(computedTotal, order.country)}
+              {formatAmount(computedTotal, currency)}
             </span>
           </div>
         </div>
@@ -359,7 +402,7 @@ export function OrdenDetailPage() {
           <AuditarSection
             commissions={commissions}
             loading={loading}
-            country={order.country}
+            country={currency}
           />
         </div>
       </div>

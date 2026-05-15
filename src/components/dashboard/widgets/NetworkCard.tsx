@@ -1,11 +1,15 @@
 // ─── NetworkCard ──────────────────────────────────────────────────────────────
 // Network stats widget.
-// simplified=true (T1): shows only totalPeople (no VG — VG shown in ProgressRankCard)
-// simplified=false (T2/T3): 2x2 grid — totalPeople, %activos, directos (no VG — shown separately)
+// simplified=true (T1): shows only totalPeople
+// simplified=false (T2/T3): 2x2 grid — totalPeople, %activos, directos
+// If userId is provided, fetches sponsorship network size from RPC.
 
+import { useQuery } from '@tanstack/react-query'
+import { supabase } from '../../../lib/supabase.ts'
 import { WidgetSkeleton } from './WidgetSkeleton'
 
 interface NetworkCardProps {
+  userId?: string
   groupVg?: number
   totalPeople?: number
   percentActive?: number
@@ -30,6 +34,7 @@ function StatCell({ label, value }: StatCellProps) {
 }
 
 export function NetworkCard({
+  userId,
   groupVg,
   totalPeople,
   percentActive,
@@ -38,9 +43,30 @@ export function NetworkCard({
   isLoading,
   className = '',
 }: NetworkCardProps) {
-  if (isLoading) return <WidgetSkeleton className={className} lines={3} />
+  // Fetch sponsorship network size from RPC when userId provided
+  const { data: sponsorshipData, isLoading: sponsorshipLoading } = useQuery({
+    queryKey: ['sponsorship-network-size', userId],
+    queryFn: async () => {
+      if (!userId) return null
+      const { data, error } = await supabase.rpc('get_sponsorship_network_size', {
+        p_user_id: userId,
+      })
+      if (error) throw error
+      return (data?.[0] ?? null) as { total_count: number; direct_count: number } | null
+    },
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5,
+  })
 
-  const isEmpty = (totalPeople === undefined || totalPeople === 0) && !simplified
+  const networkLoading = isLoading || sponsorshipLoading
+
+  // Use RPC data when props not provided
+  const resolvedTotal = totalPeople ?? sponsorshipData?.total_count
+  const resolvedDirects = directs ?? sponsorshipData?.direct_count
+
+  if (networkLoading) return <WidgetSkeleton className={className} lines={3} />
+
+  const isEmpty = (resolvedTotal === undefined || resolvedTotal === 0) && !simplified
 
   return (
     <div className={`rounded-3xl bg-white shadow-[0_4px_24px_rgba(6,42,99,0.08)] p-5 ${className}`}>
@@ -55,9 +81,9 @@ export function NetworkCard({
         <div className="flex flex-col gap-3">
           <StatCell
             label="Personas en tu red"
-            value={totalPeople !== undefined ? totalPeople.toLocaleString('es-MX') : '—'}
+            value={resolvedTotal !== undefined ? resolvedTotal.toLocaleString('es-MX') : '—'}
           />
-          {(totalPeople === undefined || totalPeople === 0) && (
+          {(resolvedTotal === undefined || resolvedTotal === 0) && (
             <p className="text-xs text-[#0CBCE5] font-medium">
               ¡Comparte tu enlace para crecer!
             </p>
@@ -68,7 +94,7 @@ export function NetworkCard({
         <div className="grid grid-cols-2 gap-4">
           <StatCell
             label="Total personas"
-            value={totalPeople !== undefined ? totalPeople.toLocaleString('es-MX') : '—'}
+            value={resolvedTotal !== undefined ? resolvedTotal.toLocaleString('es-MX') : '—'}
           />
           <StatCell
             label="% Activos"
@@ -80,7 +106,7 @@ export function NetworkCard({
           />
           <StatCell
             label="Directos"
-            value={directs !== undefined ? directs.toLocaleString('es-MX') : '—'}
+            value={resolvedDirects !== undefined ? resolvedDirects.toLocaleString('es-MX') : '—'}
           />
         </div>
       )}

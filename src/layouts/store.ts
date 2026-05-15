@@ -24,6 +24,8 @@ interface LayoutState {
   toggleTienda: () => void
   /** Explicitly set Tienda submenu expanded state */
   setTiendaExpanded: (v: boolean) => void
+  /** Reset all state to defaults (used on sign out) */
+  reset: () => void
 }
 
 export const useLayoutStore = create<LayoutState>()(
@@ -47,6 +49,13 @@ export const useLayoutStore = create<LayoutState>()(
         set((s) => ({ tiendaExpanded: !s.tiendaExpanded })),
 
       setTiendaExpanded: (v) => set({ tiendaExpanded: v }),
+
+      reset: () =>
+        set({
+          sidebarCollapsed: false,
+          negocioExpanded: false,
+          tiendaExpanded: false,
+        }),
     }),
     { name: 'helix-layout' }
   )

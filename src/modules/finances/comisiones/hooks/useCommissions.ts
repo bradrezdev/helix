@@ -5,6 +5,7 @@ export interface Commission {
   id: string
   bono_type: string
   amount: number
+  currency: string
   period_month: number
   period_year: number
   level: number | null
@@ -20,7 +21,7 @@ export function useCommissions(userId: string, month: number, year: number) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('commissions')
-        .select('id, bono_type, amount, period_month, period_year, level, calculated_at, source_user_id, source_order_id, process_verified')
+        .select('id, bono_type, amount, currency, period_month, period_year, level, calculated_at, source_user_id, source_order_id, process_verified')
         .eq('user_id', userId)
         .eq('period_month', month)
         .eq('period_year', year)

@@ -5,7 +5,7 @@ export function useDashboard(userId: string) {
   return useQuery({
     queryKey: ['dashboard', userId],
     queryFn: () => getDashboard(userId),
-    staleTime: 1000 * 60 * 2,
+    staleTime: 1000 * 30, // 30 seconds — rank progress needs fresh data after purchase
     enabled: !!userId,
   })
 }

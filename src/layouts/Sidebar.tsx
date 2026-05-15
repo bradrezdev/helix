@@ -83,16 +83,6 @@ function SidebarMenuItem({
         color: isActive ? '#062A63' : '#383A3F',
         fontFamily: 'Poppins, sans-serif',
       }}
-      onMouseEnter={(e) => {
-        if (!isActive) {
-          e.currentTarget.style.backgroundColor = 'rgba(6,42,99,0.04)'
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isActive) {
-          e.currentTarget.style.backgroundColor = 'transparent'
-        }
-      }}
     >
       <Icon
         size={collapsed && indent ? 16 : 18}
@@ -151,16 +141,6 @@ function SidebarMenuGroup({
           backgroundColor: isChildActive ? 'rgba(6,42,99,0.08)' : 'transparent',
           color: isChildActive ? '#062A63' : '#383A3F',
           fontFamily: 'Poppins, sans-serif',
-        }}
-        onMouseEnter={(e) => {
-          if (!isChildActive) {
-            e.currentTarget.style.backgroundColor = 'rgba(6,42,99,0.04)'
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!isChildActive) {
-            e.currentTarget.style.backgroundColor = 'transparent'
-          }
         }}
       >
         <Icon
