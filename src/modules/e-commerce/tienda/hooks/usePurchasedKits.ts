@@ -17,7 +17,6 @@ export function usePurchasedKits() {
         `)
         .eq('user_id', user.id)
         .in('status', ['paid', 'en_proceso'])
-        .not('order_items', 'is', null)
 
       if (error) throw error
 
