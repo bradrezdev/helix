@@ -7,11 +7,12 @@ interface ProductCardProps {
   item: OrderDetailItem
   country: string | null
   isChild?: boolean
+  childrenItems?: OrderDetailItem[]
 }
 
 // ─── ProductCard ──────────────────────────────────────────────────────────────
 
-export function ProductCard({ item, country, isChild }: ProductCardProps) {
+export function ProductCard({ item, country, isChild, childrenItems }: ProductCardProps) {
   return (
     <div
       className="bg-white rounded-[16px] shadow-sm p-4 space-y-2"
@@ -45,6 +46,48 @@ export function ProductCard({ item, country, isChild }: ProductCardProps) {
         >
           {item.cantidad}
         </p>
+      )}
+
+      {/* Children items (kit components) rendered as detail list inside parent card */}
+      {childrenItems && childrenItems.length > 0 && (
+        <div
+          className="rounded-[12px] p-3 space-y-2"
+          style={{ backgroundColor: '#F5F7FA' }}
+        >
+          <p
+            className="text-xs font-semibold"
+            style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}
+          >
+            Incluye:
+          </p>
+          {childrenItems.map((child) => (
+            <div
+              key={child.id}
+              className="flex items-center justify-between text-xs"
+              style={{ fontFamily: 'Poppins, sans-serif' }}
+            >
+              <span style={{ color: '#383A3F' }}>
+                {child.product_name ?? child.product_code}
+                <span className="text-gray-400"> ×{child.quantity}</span>
+              </span>
+              <span style={{ color: '#062A63', fontWeight: 600 }}>
+                {formatAmount(child.unit_price, country)} c/u
+              </span>
+            </div>
+          ))}
+          <div
+            className="flex justify-between text-xs font-semibold pt-1"
+            style={{ borderTop: '1px solid #EAECF0', color: '#062A63', fontFamily: 'Poppins, sans-serif' }}
+          >
+            <span>Total del paquete</span>
+            <span>
+              {formatAmount(
+                childrenItems.reduce((sum, c) => sum + c.total_amount, 0),
+                country
+              )}
+            </span>
+          </div>
+        </div>
       )}
 
       {/* Price row — hide for child/component items */}

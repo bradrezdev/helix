@@ -281,6 +281,7 @@ export function TiendaPage() {
   const isAdmin = useIsAdmin(user?.id)
   const { hasKit, isLoading: kitLoading } = useKitEligibility(user?.id)
   const { isKitMode, setKitMode, validateCart, showKitFilter, setShowKitFilter } = useCart()
+  const { data: purchasedCodes = [] } = usePurchasedKits()
 
   const country: string = getCountryCurrency(profile?.country ?? 'MX')
   const membership: string = profile?.membership ?? 'socio'
@@ -515,6 +516,7 @@ export function TiendaPage() {
             country={country}
             membership={membership}
             isAdmin={isAdmin}
+            excludeProductCodes={purchasedCodes}
             onProductSelect={handleProductSelect}
             onAddProduct={isAdmin ? () => { setEditProductInit(null); setShowAddProduct(true) } : undefined}
             onEditStatus={isAdmin ? (codes) => setEditStatusCodes(codes) : undefined}

@@ -12,6 +12,7 @@ interface StoreSectionsViewProps {
   country: string
   membership: string
   isAdmin: boolean
+  excludeProductCodes?: string[]
   onProductSelect: (product: Product) => void
   onAddProduct?: () => void
   onEditStatus?: (codes: string[]) => void
@@ -21,6 +22,7 @@ export function StoreSectionsView({
   country,
   membership,
   isAdmin,
+  excludeProductCodes = [],
   onProductSelect,
   onAddProduct,
   onEditStatus,
@@ -129,10 +131,10 @@ export function StoreSectionsView({
 
       {/* Sections */}
       <div className="flex flex-col gap-6">
-        {sections.novedades.length > 0 && (
+        {sections.novedades.filter(p => !excludeProductCodes.includes(p.code)).length > 0 && (
           <HorizontalSection
             title="Últimas novedades"
-            products={sections.novedades}
+            products={sections.novedades.filter(p => !excludeProductCodes.includes(p.code))}
             country={country}
             membership={membership}
             isAdmin={isAdmin}
@@ -143,10 +145,10 @@ export function StoreSectionsView({
           />
         )}
 
-        {sections.recomendados.length > 0 && (
+        {sections.recomendados.filter(p => !excludeProductCodes.includes(p.code)).length > 0 && (
           <HorizontalSection
             title="Recomendados por nosotros"
-            products={sections.recomendados}
+            products={sections.recomendados.filter(p => !excludeProductCodes.includes(p.code))}
             country={country}
             membership={membership}
             isAdmin={isAdmin}
@@ -157,10 +159,10 @@ export function StoreSectionsView({
           />
         )}
 
-        {sections.masPedidos.length > 0 && (
+        {sections.masPedidos.filter(p => !excludeProductCodes.includes(p.code)).length > 0 && (
           <HorizontalSection
             title="Productos más pedidos"
-            products={sections.masPedidos}
+            products={sections.masPedidos.filter(p => !excludeProductCodes.includes(p.code))}
             country={country}
             membership={membership}
             isAdmin={isAdmin}
@@ -171,12 +173,13 @@ export function StoreSectionsView({
           />
         )}
 
-        {sections.byCategoria.map(({ categoria, products }) =>
-          products.length === 0 ? null : (
+        {sections.byCategoria.map(({ categoria, products }) => {
+          const filteredProducts = products.filter(p => !excludeProductCodes.includes(p.code))
+          return filteredProducts.length === 0 ? null : (
             <CategorySection
               key={categoria.id}
               categoria={categoria}
-              products={products}
+              products={filteredProducts}
               country={country}
               membership={membership}
               isAdmin={isAdmin}
@@ -186,7 +189,7 @@ export function StoreSectionsView({
               onToggleSelect={toggleSelect}
             />
           )
-        )}
+        })}
       </div>
 
       {/* Admin FAB */}

@@ -299,7 +299,9 @@ async function fetchOrderDetail(
   // All sub-queries MUST use the resolved order UUID, not the input orderId
   const resolvedOrderId = order.id
   const productCodes = rawItems.map((i) => i.product_code).filter(Boolean)
-  const shippingData = order.shipping_data as ShippingData
+  // shipping_data is the canonical field; fallback to metadata.shipping for orders
+  // where shipping info was stored in metadata (legacy orders)
+  const shippingData = (order.shipping_data ?? (raw as any).metadata?.shipping ?? null) as ShippingData
 
   // Step 3: parallel fetches using resolved UUID
   const [

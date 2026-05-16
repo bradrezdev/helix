@@ -73,21 +73,28 @@ interface ItemGroup {
 }
 
 function groupOrderItems(items: OrderDetailItem[]): ItemGroup[] {
-  const parents = items.filter((i) => i.is_kit || i.kit_type === 'membresia')
+  const kitParents = items.filter((i) => i.is_kit)
+  const membershipParents = items.filter((i) => i.kit_type === 'membresia')
   const children = items.filter((i) => !i.is_kit && i.kit_type !== 'membresia')
 
-  if (parents.length === 0) {
-    // No parents — all items are standalone
-    return children.map((item) => ({ parent: item, children: [] }))
+  const result: ItemGroup[] = []
+
+  // Add membership items as standalone parents
+  membershipParents.forEach((p) => result.push({ parent: p, children: [] }))
+
+  // Add kit parents with children grouped under first kit
+  if (kitParents.length > 0) {
+    result.push({ parent: kitParents[0], children: [...children] })
+    // Remaining kits (if any) get no children
+    for (let i = 1; i < kitParents.length; i++) {
+      result.push({ parent: kitParents[i], children: [] })
+    }
+  } else if (children.length > 0) {
+    // No kits but have children — show as standalone
+    children.forEach((c) => result.push({ parent: c, children: [] }))
   }
 
-  // Distribute children by product_code prefix matching
-  return parents.map((parent) => ({
-    parent,
-    children: children.filter(
-      (child) => child.product_code?.startsWith(parent.product_code ?? '') ?? false
-    ),
-  }))
+  return result
 }
 
 // ─── OrdenDetailPage ──────────────────────────────────────────────────────────
@@ -349,17 +356,12 @@ export function OrdenDetailPage() {
               </p>
             ) : (
               groupedItems.map((group) => (
-                <div key={group.parent.id} className="space-y-2">
-                  {/* Parent item (kit or membership) */}
-                  <ProductCard item={group.parent} country={currency} />
-                  {/* Child component items indented under parent */}
-                  {group.children.length > 0 && (
-                    <div className="ml-4 pl-3 space-y-2" style={{ borderLeft: '2px solid #EAECF0' }}>
-                      {group.children.map((child) => (
-                        <ProductCard key={child.id} item={child} country={currency} isChild />
-                      ))}
-                    </div>
-                  )}
+                <div key={group.parent.id}>
+                  <ProductCard
+                    item={group.parent}
+                    country={currency}
+                    childrenItems={group.children.length > 0 ? group.children : undefined}
+                  />
                 </div>
               ))
             )}

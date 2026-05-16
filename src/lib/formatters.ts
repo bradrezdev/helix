@@ -77,13 +77,18 @@ export function formatAmount(amount: number, country?: string | null): string {
   }).format(amount)
 }
 
-export function formatCurrency(amount: number, currencyCode: string = 'MXN'): string {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: currencyCode,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount)
+export function formatCurrency(amount: number, currencyCode: string | null = 'MXN'): string {
+  const safe = currencyCode ?? 'MXN'
+  try {
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: safe,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount)
+  } catch {
+    return `$${amount.toFixed(2)} ${safe}`
+  }
 }
 
 // Bono type labels
