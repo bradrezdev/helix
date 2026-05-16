@@ -49,9 +49,22 @@ export function useNetworkPedidos({
         p_date_to: dateTo ?? null,
       })
       if (error) throw error
-      const orders = (data ?? []) as NetworkOrder[]
-      const total = orders.length > 0 ? (orders[0] as unknown as { total_count: number }).total_count : 0
-      return { orders, total } as NetworkPedidosResult
+      const rows = (data ?? []) as Array<Record<string, unknown>>
+      const orders: NetworkOrder[] = rows.map((row) => ({
+        id: row.order_id as string,
+        order_code: row.order_id as string,
+        buyer_user_id: row.buyer_user_id as number,
+        buyer_name: row.buyer_name as string,
+        buyer_apellidos: row.buyer_apellidos as string | null,
+        tree_level: row.tree_level as number,
+        pv: row.total_pv as number,
+        cv: row.total_cv as number,
+        total_amount: row.total_amount as number,
+        status: row.status as string,
+        created_at: row.created_at as string,
+      }))
+      const total = rows.length > 0 ? (rows[0].total_count as number) : 0
+      return { orders, total }
     },
     enabled: !!userId,
     staleTime: 2 * 60 * 1000, // 2 min (orders change more often)

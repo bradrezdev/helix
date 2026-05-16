@@ -239,7 +239,7 @@ export default function BonoDetail() {
             const cv = c.source_order?.cv ?? 0
             const pct = cv > 0 ? (c.amount / cv) * 100 : 0
             const fullName = c.source_user
-              ? `${c.source_user.name} ${c.source_user.apellidos}`
+              ? [c.source_user.name, c.source_user.apellidos].filter(Boolean).join(' ')
               : null
 
             return (

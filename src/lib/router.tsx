@@ -4,7 +4,6 @@ import DashboardLayout from '../layouts/DashboardLayout.tsx'
 import ComisionesNivelPage from '../modules/finances/comisiones/ComisionesNivelPage.tsx'
 import GananciasPage from '../modules/finances/ganancias/GananciasPage.tsx'
 import BonoDetail from '../modules/finances/ganancias/components/BonoDetail.tsx'
-import HistorialVolumenPage from '../modules/network/historial-volumen/HistorialVolumenPage.tsx'
 import HoldingTankPage from '../modules/network/inscripciones/HoldingTankPage.tsx'
 import { LoginPage } from '../modules/auth/LoginPage'
 import { RegisterPage } from '../modules/auth/RegisterPage'
@@ -297,8 +296,7 @@ const gananciasBonoRoute = createRoute({
 const historialVolumenRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/historial-volumen',
-  beforeLoad: requireNotCP,
-  component: () => <HistorialVolumenPage />,
+  beforeLoad: () => { throw redirect({ to: '/comisiones' }) },
 })
 
 const inscripcionesRoute = createRoute({

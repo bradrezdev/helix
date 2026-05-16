@@ -94,12 +94,16 @@ export function formatCurrency(amount: number, currencyCode: string | null = 'MX
 // Bono type labels
 export const BONO_TYPE_LABELS: Record<string, string> = {
   patrocinio: 'Patrocinio',
-  uninivel: 'Uninivel',
-  match: 'Match',
-  promotor: 'Promotor',
-  fidelidad: 'Fidelidad',
+  unilevel: 'Uninivel',
   infinito_patrocinio: 'Infinito Patrocinio',
-  infinito_uninivel: 'Infinito Uninivel',
+  infinito_unilevel: 'Infinito Uninivel',
+  diferencial_patrocinio: 'Diferencial Patrocinio',
+  avance_rango: 'Avance de Rango',
+  match: 'Match',
+  bono_promotor: 'Bono Promotor',
+  venta_directa: 'Venta Directa',
+  cliente_preferente: 'Cliente Preferente',
+  fidelidad: 'Fidelidad',
 }
 
 export function formatBonoType(type: string): string {
