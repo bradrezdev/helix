@@ -9,7 +9,7 @@ export interface UserProfile {
   email: string
   rank: string
   membership: string | null
-  sponsor_id: string | null
+  sponsor_id: number | null
   enrollment_date: string
   created_at: string
   link_referido: string | null
@@ -56,14 +56,14 @@ export function useProfile(userId: string) {
   }
 }
 
-export function useSponsor(sponsorId: string | null | undefined) {
+export function useSponsor(sponsorId: number | null | undefined) {
   return useQuery({
     queryKey: ['profile', 'sponsor', sponsorId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('users')
         .select('id, user_id, name, apellidos, email, rank')
-        .eq('id', sponsorId!)
+        .eq('user_id', Number(sponsorId!))
         .maybeSingle()
       if (error) throw error
       return data as SponsorProfile | null
