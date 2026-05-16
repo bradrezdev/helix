@@ -73,20 +73,21 @@ interface ItemGroup {
 }
 
 function groupOrderItems(items: OrderDetailItem[]): ItemGroup[] {
-  const parents = items.filter((i) => i.is_kit)
-  const children = items.filter((i) => !i.is_kit)
+  const parents = items.filter((i) => i.is_kit || i.kit_type === 'membresia')
+  const children = items.filter((i) => !i.is_kit && i.kit_type !== 'membresia')
 
   if (parents.length === 0) {
-    // No kit parents — all items are standalone
+    // No parents — all items are standalone
     return children.map((item) => ({ parent: item, children: [] }))
   }
 
-  // Distribute children — all non-kit items go under the last kit parent
-  const groups: ItemGroup[] = parents.map((p) => ({ parent: p, children: [] }))
-  if (children.length > 0) {
-    groups[groups.length - 1].children = children
-  }
-  return groups
+  // Distribute children by product_code prefix matching
+  return parents.map((parent) => ({
+    parent,
+    children: children.filter(
+      (child) => child.product_code?.startsWith(parent.product_code ?? '') ?? false
+    ),
+  }))
 }
 
 // ─── OrdenDetailPage ──────────────────────────────────────────────────────────
@@ -139,7 +140,7 @@ export function OrdenDetailPage() {
     )
   }
 
-  const { order, items, shipment, commissions, shippingLabel, cediName } = data
+  const { order, items, shipment, commissions, shippingLabel, cediName, cediDetails } = data
 
   // ── Group items hierarchically (kit parents → child components) ──────────────
   const groupedItems = groupOrderItems(items)
@@ -265,36 +266,6 @@ export function OrdenDetailPage() {
 
         <hr className="border-[#EAECF0] my-4" />
 
-        {/* ── Envío section ────────────────────────────────────────────────── */}
-        <div className="space-y-3" data-testid="order-detail-shipping">
-          <p
-            className="font-semibold"
-            style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif', fontSize: '17px' }}
-          >
-            Envío
-          </p>
-          <div
-            className="bg-white rounded-[16px] shadow-sm p-4 space-y-2"
-            style={{ border: '1px solid #EAECF0' }}
-          >
-            {shippingLabel && shippingLabel !== '—' ? (
-              <>
-                <DetailRow label="Dirección" value={shippingLabel} />
-                {cediName && <DetailRow label="CEDI" value={cediName} />}
-              </>
-            ) : (
-              <p
-                className="text-sm text-center py-4"
-                style={{ color: 'rgba(6,42,99,0.40)', fontFamily: 'Poppins, sans-serif' }}
-              >
-                No hay información de envío
-              </p>
-            )}
-          </div>
-        </div>
-
-        <hr className="border-[#EAECF0] my-4" />
-
         {/* ── Detalles section ─────────────────────────────────────────────── */}
         <div className="space-y-3">
           <p
@@ -312,6 +283,48 @@ export function OrdenDetailPage() {
               <DetailRow label="Actualizado" value={formatDateTime(order.updated_at)} />
             )}
             <DetailRow label="Pago" value={formatPaymentMethod(order.payment_method)} />
+          </div>
+        </div>
+
+        <hr className="border-[#EAECF0] my-4" />
+
+        {/* ── Envío section ────────────────────────────────────────────────── */}
+        <div className="space-y-3" data-testid="order-detail-shipping">
+          <p
+            className="font-semibold"
+            style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif', fontSize: '17px' }}
+          >
+            Envío
+          </p>
+          <div
+            className="bg-white rounded-[16px] shadow-sm p-4 space-y-2"
+            style={{ border: '1px solid #EAECF0' }}
+          >
+            {shippingLabel && shippingLabel !== '—' ? (
+              <div className="space-y-3">
+                <DetailRow label="Dirección" value={shippingLabel} />
+                {cediDetails && (
+                  <div className="space-y-1">
+                    <DetailRow label="CEDI" value={cediDetails.nombre} />
+                    {cediDetails.encargado && <DetailRow label="Encargado" value={cediDetails.encargado} />}
+                    {cediDetails.telefono && <DetailRow label="Teléfono" value={cediDetails.telefono} />}
+                    {cediDetails.calle_numero && (
+                      <DetailRow
+                        label="Ubicación"
+                        value={[cediDetails.calle_numero, cediDetails.colonia, cediDetails.municipio, cediDetails.estado, cediDetails.codigo_postal].filter(Boolean).join(', ')}
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p
+                className="text-sm text-center py-4"
+                style={{ color: 'rgba(6,42,99,0.40)', fontFamily: 'Poppins, sans-serif' }}
+              >
+                No hay información de envío
+              </p>
+            )}
           </div>
         </div>
 
@@ -343,7 +356,7 @@ export function OrdenDetailPage() {
                   {group.children.length > 0 && (
                     <div className="ml-4 pl-3 space-y-2" style={{ borderLeft: '2px solid #EAECF0' }}>
                       {group.children.map((child) => (
-                        <ProductCard key={child.id} item={child} country={currency} />
+                        <ProductCard key={child.id} item={child} country={currency} isChild />
                       ))}
                     </div>
                   )}

@@ -167,7 +167,9 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
                 <DetailRow label="País" value={profile?.country ?? ''} />
                 <DetailRow label="Género" value={profile?.gender ?? ''} />
                 <DetailRow label="Membresía" value={profile?.membership ?? ''} />
-                <DetailRow label="Link de referido" value={profile?.link_referido ?? ''} />
+                {profile?.membership === 'socio' && profile?.link_referido && (
+                  <DetailRow label="Link de referido" value={profile.link_referido} />
+                )}
                 <DetailRow
                   label="Fecha de registro"
                   value={

@@ -16,6 +16,7 @@ export interface OrderDetailItem {
   cv: number
   cantidad: string | null // from products.cantidad
   is_kit: boolean // from products.is_kit
+  kit_type: string | null // from products.kit_type
 }
 
 export interface OrderShipment {
@@ -56,6 +57,18 @@ export interface FullOrderDetail {
   kit_type: string | null
 }
 
+export interface CediDetails {
+  id: string
+  nombre: string
+  encargado: string | null
+  telefono: string | null
+  calle_numero: string | null
+  colonia: string | null
+  municipio: string | null
+  estado: string | null
+  codigo_postal: string | null
+}
+
 export interface OrderDetailData {
   order: FullOrderDetail
   items: OrderDetailItem[]
@@ -63,29 +76,31 @@ export interface OrderDetailData {
   commissions: OrderCommission[]
   shippingLabel: string // pre-resolved label
   cediName: string | null
+  cediDetails: CediDetails | null
 }
 
 // ─── Fetch helpers ────────────────────────────────────────────────────────────
 
-async function fetchShipping(shippingData: ShippingData): Promise<{ label: string; cediName: string | null }> {
+async function fetchShipping(shippingData: ShippingData): Promise<{ label: string; cediName: string | null; cediDetails: CediDetails | null }> {
   if (!shippingData) {
-    return { label: formatShippingMethod(null), cediName: null }
+    return { label: formatShippingMethod(null), cediName: null, cediDetails: null }
   }
 
   if (shippingData.type === 'cedi') {
     const { data, error } = await supabase
       .from('cedis')
-      .select('nombre')
+      .select('id, nombre, encargado, telefono, calle_numero, colonia, municipio, estado, codigo_postal')
       .eq('id', shippingData.cedi_id)
       .single()
 
     if (error) {
       console.warn('[useOrderDetail] cedis fetch failed:', error.message)
-      return { label: formatShippingMethod(shippingData), cediName: null }
+      return { label: formatShippingMethod(shippingData), cediName: null, cediDetails: null }
     }
 
-    const cediName = (data as { nombre: string } | null)?.nombre ?? null
-    return { label: formatShippingMethod(shippingData, cediName ?? undefined), cediName }
+    const cedi = data as CediDetails | null
+    const cediName = cedi?.nombre ?? null
+    return { label: formatShippingMethod(shippingData, cediName ?? undefined), cediName, cediDetails: cedi }
   }
 
   if (shippingData.type === 'domicilio') {
@@ -97,10 +112,10 @@ async function fetchShipping(shippingData: ShippingData): Promise<{ label: strin
 
     if (error) {
       console.warn('[useOrderDetail] direcciones fetch failed:', error.message)
-      return { label: 'Envío a domicilio', cediName: null }
+      return { label: 'Envío a domicilio', cediName: null, cediDetails: null }
     }
 
-    if (!data) return { label: 'Envío a domicilio', cediName: null }
+    if (!data) return { label: 'Envío a domicilio', cediName: null, cediDetails: null }
 
     const dir = data as {
       nombre_completo: string | null
@@ -120,10 +135,10 @@ async function fetchShipping(shippingData: ShippingData): Promise<{ label: strin
       dir.codigo_postal,
     ].filter(Boolean)
 
-    return { label: parts.join(', ') || 'Envío a domicilio', cediName: null }
+    return { label: parts.join(', ') || 'Envío a domicilio', cediName: null, cediDetails: null }
   }
 
-  return { label: formatShippingMethod(shippingData), cediName: null }
+  return { label: formatShippingMethod(shippingData), cediName: null, cediDetails: null }
 }
 
 async function fetchProductsCantidad(
@@ -133,7 +148,7 @@ async function fetchProductsCantidad(
 
   const { data, error } = await supabase
     .from('products')
-    .select('code, cantidad, is_kit')
+    .select('code, cantidad, is_kit, kit_type')
     .in('code', productCodes)
 
   if (error) {
@@ -141,9 +156,9 @@ async function fetchProductsCantidad(
     return new Map()
   }
 
-  const map = new Map<string, { cantidad: string | null; is_kit: boolean }>()
-  for (const row of (data ?? []) as Array<{ code: string; cantidad: string | null; is_kit: boolean }>) {
-    map.set(row.code, { cantidad: row.cantidad, is_kit: row.is_kit ?? false })
+  const map = new Map<string, { cantidad: string | null; is_kit: boolean; kit_type: string | null }>()
+  for (const row of (data ?? []) as Array<{ code: string; cantidad: string | null; is_kit: boolean; kit_type: string | null }>) {
+    map.set(row.code, { cantidad: row.cantidad, is_kit: row.is_kit ?? false, kit_type: row.kit_type ?? null })
   }
   return map
 }
@@ -302,12 +317,12 @@ async function fetchOrderDetail(
   const cantidadMap =
     cantidadMapResult.status === 'fulfilled'
       ? cantidadMapResult.value
-      : new Map<string, { cantidad: string | null; is_kit: boolean }>()
+      : new Map<string, { cantidad: string | null; is_kit: boolean; kit_type: string | null }>()
 
-  const { label: shippingLabel, cediName } =
+  const { label: shippingLabel, cediName, cediDetails } =
     shippingResult.status === 'fulfilled'
       ? shippingResult.value
-      : { label: '—', cediName: null }
+      : { label: '—', cediName: null, cediDetails: null }
 
   const shipment =
     shipmentResult.status === 'fulfilled' ? shipmentResult.value : null
@@ -330,6 +345,7 @@ async function fetchOrderDetail(
         cv: item.cv,
         cantidad: productInfo?.cantidad ?? null,
         is_kit: productInfo?.is_kit ?? false,
+        kit_type: productInfo?.kit_type ?? null,
       }
     })
     .sort((a, b) => (b.is_kit ? 1 : 0) - (a.is_kit ? 1 : 0))
@@ -341,6 +357,7 @@ async function fetchOrderDetail(
     commissions,
     shippingLabel,
     cediName,
+    cediDetails,
   }
 }
 

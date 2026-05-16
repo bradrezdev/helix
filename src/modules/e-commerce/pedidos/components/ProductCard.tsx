@@ -6,11 +6,12 @@ import { formatAmount } from '../../../../lib/formatters.ts'
 interface ProductCardProps {
   item: OrderDetailItem
   country: string | null
+  isChild?: boolean
 }
 
 // ─── ProductCard ──────────────────────────────────────────────────────────────
 
-export function ProductCard({ item, country }: ProductCardProps) {
+export function ProductCard({ item, country, isChild }: ProductCardProps) {
   return (
     <div
       className="bg-white rounded-[16px] shadow-sm p-4 space-y-2"
@@ -46,45 +47,49 @@ export function ProductCard({ item, country }: ProductCardProps) {
         </p>
       )}
 
-      {/* Price row */}
-      <div className="flex items-center justify-between gap-2">
-        <span
-          className="text-xs"
-          style={{ color: 'rgba(6,42,99,0.50)', fontFamily: 'Poppins, sans-serif' }}
-        >
-          {formatAmount(item.unit_price, country)} c/u
-        </span>
-        <span
-          className="text-sm font-semibold"
-          style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}
-        >
-          {formatAmount(item.total_amount, country)}
-        </span>
-      </div>
+      {/* Price row — hide for child/component items */}
+      {!isChild && (
+        <div className="flex items-center justify-between gap-2">
+          <span
+            className="text-xs"
+            style={{ color: 'rgba(6,42,99,0.50)', fontFamily: 'Poppins, sans-serif' }}
+          >
+            {formatAmount(item.unit_price, country)} c/u
+          </span>
+          <span
+            className="text-sm font-semibold"
+            style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}
+          >
+            {formatAmount(item.total_amount, country)}
+          </span>
+        </div>
+      )}
 
-      {/* PV / CV badges */}
-      <div className="flex items-center gap-2">
-        <span
-          className="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium"
-          style={{
-            backgroundColor: '#E0F9FF',
-            color: '#0CBCE5',
-            fontFamily: 'Poppins, sans-serif',
-          }}
-        >
-          PV: {item.pv}
-        </span>
-        <span
-          className="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium"
-          style={{
-            backgroundColor: '#E0F9FF',
-            color: '#0CBCE5',
-            fontFamily: 'Poppins, sans-serif',
-          }}
-        >
-          CV: {item.cv}
-        </span>
-      </div>
+      {/* PV / CV badges — hide for child/component items */}
+      {!isChild && (
+        <div className="flex items-center gap-2">
+          <span
+            className="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium"
+            style={{
+              backgroundColor: '#E0F9FF',
+              color: '#0CBCE5',
+              fontFamily: 'Poppins, sans-serif',
+            }}
+          >
+            PV: {item.pv}
+          </span>
+          <span
+            className="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium"
+            style={{
+              backgroundColor: '#E0F9FF',
+              color: '#0CBCE5',
+              fontFamily: 'Poppins, sans-serif',
+            }}
+          >
+            CV: {item.cv}
+          </span>
+        </div>
+      )}
     </div>
   )
 }

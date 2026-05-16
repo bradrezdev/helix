@@ -117,6 +117,8 @@ export function CheckoutPage() {
       clear()
       queryClient.invalidateQueries({ queryKey: ['profile', user.id] })
       queryClient.invalidateQueries({ queryKey: ['kit-eligibility', user.id] })
+      queryClient.invalidateQueries({ queryKey: ['purchased-kits', user.id] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', user.id] })
       setStep('confirm')
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
