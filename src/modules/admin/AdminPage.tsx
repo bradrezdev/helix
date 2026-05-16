@@ -828,6 +828,7 @@ interface AssignOrderResult {
 function AsignarOrdenSection() {
   const { session } = useAuth()
   const [mode, setMode] = useState<AssignMode>('single')
+  const [orderType, setOrderType] = useState<'kit' | 'repurchase'>('kit')
   const [quantity, setQuantity] = useState(5)
   const [dryRun, setDryRun] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -877,6 +878,7 @@ function AsignarOrdenSection() {
         },
         body: JSON.stringify({
           mode,
+          type: orderType,
           user_id: selectedUser?.id,
           quantity,
           dry_run: dryRun,
@@ -903,7 +905,7 @@ function AsignarOrdenSection() {
 
   return (
     <Card>
-      <SectionLabel>Asignar Orden GSHMAX</SectionLabel>
+      <SectionLabel>Asignar Orden</SectionLabel>
       <div className="space-y-5">
         {/* Quantity */}
         <div>
@@ -919,6 +921,37 @@ function AsignarOrdenSection() {
             className="w-full rounded-[18px] border border-[#EAECF0] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#062A63]/20"
             style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}
           />
+        </div>
+
+        {/* Order type selector — Fix A: kit or repurchase */}
+        <div>
+          <label className="text-xs text-gray-500 mb-2 block" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Tipo de orden
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {([{ id: 'kit' as const, label: 'Kit de inicio', sub: 'STARTERKIT — is_kit=true, Bono Patrocinio' },
+               { id: 'repurchase' as const, label: 'Producto de recompra', sub: 'O5MAX — is_kit=false, Bono Uninivel' }]).map((opt) => {
+              const active = orderType === opt.id
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => setOrderType(opt.id)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-[32px] border text-left transition-all"
+                  style={{
+                    borderColor: active ? '#062A63' : '#EAECF0',
+                    background: active ? '#EFF6FF' : '#fff',
+                    color: active ? '#062A63' : '#383A3F',
+                    fontFamily: 'Poppins, sans-serif',
+                  }}
+                >
+                  <div>
+                    <p className="text-sm font-semibold">{opt.label}</p>
+                    <p className="text-xs" style={{ color: '#9CA3AF' }}>{opt.sub}</p>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         {/* Mode selector */}
