@@ -52,6 +52,10 @@ export function BottomNav() {
   const isAdmin = useIsAdmin()
 
   const currentPath = location.pathname
+  const isSocio = profile?.membership === 'socio'
+  const menuItems = DROPDOWN_ITEMS.filter(
+    (item) => item.label !== 'Nuevo registro' || isSocio
+  )
 
   useEffect(() => {
     function handleOutsideClick(e: MouseEvent) {
@@ -149,7 +153,7 @@ export function BottomNav() {
                 minWidth: '220px',
               }}
             >
-              {DROPDOWN_ITEMS.map(({ icon: Icon, label, route }) => (
+              {menuItems.map(({ icon: Icon, label, route }) => (
                 <button
                   key={label}
                   className="flex flex-row items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors text-left"

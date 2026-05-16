@@ -109,6 +109,7 @@ export function DashboardTier1({ profile }: DashboardTier1Props) {
       {/* Referral Link */}
       <ReferralLinkCard
         userId={profile.user_id}
+        membership={profile.membership}
         isLoading={false}
       />
 

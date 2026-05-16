@@ -93,6 +93,8 @@ export const useCart = create<CartStore>()(
     const state = get()
     const item = state.items.find((i) => i.product.code === code)
     if (!item) return { ok: true }
+    // Membership can only have 1 unit
+    if (item.product.kit_type === 'membresia') return { ok: false, reason: 'membership_limit' }
     if (item.product.stock <= item.quantity) return { ok: false, reason: 'stock_exceeded' }
     set((s) => ({
       items: s.items.map((i) =>

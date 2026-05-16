@@ -297,13 +297,15 @@ export function Sidebar() {
           </SidebarMenuGroup>
         )}
 
-        {/* Nuevo registro */}
-        <SidebarMenuItem
-          icon={UserPlus2}
-          label="Nuevo registro"
-          to={registerTo}
-          collapsed={sidebarCollapsed}
-        />
+        {/* Nuevo registro — solo para socios */}
+        {isBusinessAllowed && (
+          <SidebarMenuItem
+            icon={UserPlus2}
+            label="Nuevo registro"
+            to={registerTo}
+            collapsed={sidebarCollapsed}
+          />
+        )}
 
         {/* Tienda — dropdown group */}
         <SidebarMenuGroup

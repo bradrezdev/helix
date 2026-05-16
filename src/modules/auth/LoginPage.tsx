@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
 import { useNavigate, Link } from '@tanstack/react-router'
 import { supabase } from '../../lib/supabase.ts'
 import { useAuth } from './hooks/useAuth.ts'
@@ -9,6 +10,7 @@ export function LoginPage() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -96,23 +98,37 @@ export function LoginPage() {
             >
               Contraseña
             </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              placeholder="••••••••"
-              className="rounded-2xl border px-4 py-3 text-sm outline-none transition-all"
-              style={{
-                borderColor: '#EAECF0',
-                color: '#383A3F',
-                fontFamily: 'Poppins, sans-serif',
-              }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = '#0CBCE5')}
-              onBlur={(e) => (e.currentTarget.style.borderColor = '#EAECF0')}
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                placeholder="••••••••"
+                className="rounded-2xl border px-4 py-3 text-sm outline-none transition-all w-full pr-12"
+                style={{
+                  borderColor: '#EAECF0',
+                  color: '#383A3F',
+                  fontFamily: 'Poppins, sans-serif',
+                }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = '#0CBCE5')}
+                onBlur={(e) => (e.currentTarget.style.borderColor = '#EAECF0')}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              >
+                {showPassword ? (
+                  <EyeOff size={18} style={{ color: '#9CA3AF' }} />
+                ) : (
+                  <Eye size={18} style={{ color: '#9CA3AF' }} />
+                )}
+              </button>
+            </div>
           </div>
 
           {error && (

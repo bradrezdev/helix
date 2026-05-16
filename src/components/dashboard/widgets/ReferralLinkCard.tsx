@@ -11,6 +11,8 @@ interface ReferralLinkCardProps {
   referralLink?: string
   /** User numeric ID (bigint from DB). Used to construct link if referralLink is absent. */
   userId?: number
+  /** User membership type. If not 'socio', widget is hidden. */
+  membership?: string
   isLoading?: boolean
   className?: string
 }
@@ -24,8 +26,9 @@ async function copyToClipboard(text: string) {
   }
 }
 
-export function ReferralLinkCard({ referralLink, userId, isLoading, className = '' }: ReferralLinkCardProps) {
+export function ReferralLinkCard({ referralLink, userId, membership, isLoading, className = '' }: ReferralLinkCardProps) {
   if (isLoading) return <WidgetSkeleton className={className} lines={2} />
+  if (membership !== 'socio') return null
 
   // Construct link dynamically — DEV uses localhost port, prod uses hostname
   const baseUrl = import.meta.env.DEV

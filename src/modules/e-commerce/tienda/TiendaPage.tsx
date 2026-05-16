@@ -436,8 +436,8 @@ export function TiendaPage() {
         )}
       </div>
 
-      {/* Kit mode banner */}
-      {isKitMode && (
+      {/* Kit mode banner — only for users without a kit */}
+      {isKitMode && !hasKit && (
         <div
           className="flex items-center justify-between px-4 py-3 rounded-2xl mb-4"
           style={{ background: 'rgba(12,188,229,0.10)', border: '1.5px solid rgba(12,188,229,0.3)' }}
@@ -512,15 +512,24 @@ export function TiendaPage() {
               onSelect={handleProductSelect}
             />
           )}
-          <StoreSectionsView
-            country={country}
-            membership={membership}
-            isAdmin={isAdmin}
-            excludeProductCodes={purchasedCodes}
-            onProductSelect={handleProductSelect}
-            onAddProduct={isAdmin ? () => { setEditProductInit(null); setShowAddProduct(true) } : undefined}
-            onEditStatus={isAdmin ? (codes) => setEditStatusCodes(codes) : undefined}
-          />
+          {(() => {
+            // Only exclude kit products, not components like O5MAX
+            // This prevents store sections from disappearing when all items are filtered
+            const kitOnlyExcluded = freshProducts
+              .filter(p => p.is_kit && purchasedCodes.includes(p.code))
+              .map(p => p.code)
+            return (
+              <StoreSectionsView
+                country={country}
+                membership={membership}
+                isAdmin={isAdmin}
+                excludeProductCodes={kitOnlyExcluded}
+                onProductSelect={handleProductSelect}
+                onAddProduct={isAdmin ? () => { setEditProductInit(null); setShowAddProduct(true) } : undefined}
+                onEditStatus={isAdmin ? (codes) => setEditStatusCodes(codes) : undefined}
+              />
+            )
+          })()}
         </>
       ) : (
         <KitListView

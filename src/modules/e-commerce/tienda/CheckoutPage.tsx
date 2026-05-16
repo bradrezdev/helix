@@ -223,18 +223,76 @@ export function CheckoutPage() {
           >
             Resumen
           </p>
-          <div className="flex flex-col gap-2">
-            {items.map(({ product, quantity }) => (
-              <div key={product.code} className="flex justify-between items-center">
-                <span className="text-sm" style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}>
-                  {product.name} × {quantity}
-                </span>
-                <span className="text-sm font-semibold" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
-                  {(getProductPrice(product, country, membership) * quantity).toLocaleString('es-MX', { minimumFractionDigits: 2, style: 'currency', currency: country === 'USD' ? 'USD' : country === 'EUR' ? 'EUR' : country === 'COP' ? 'COP' : 'MXN' })}
-                </span>
+          {(() => {
+            // Group items: kit parents, membership, and children
+            const kitParents = items.filter(i => i.product.is_kit)
+            const membershipItems = items.filter(i => i.product.kit_type === 'membresia')
+            const childItems = items.filter(i => !i.product.is_kit && i.product.kit_type !== 'membresia')
+            const hasKit = kitParents.length > 0
+
+            if (!hasKit) {
+              // No kit — show all items normally with prices
+              return (
+                <div className="flex flex-col gap-2">
+                  {items.map(({ product, quantity }) => {
+                    const price = getProductPrice(product, country, membership) * quantity
+                    return (
+                      <div key={product.code} className="flex justify-between items-center">
+                        <span className="text-sm" style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}>
+                          {product.name} × {quantity}
+                        </span>
+                        <span className="text-sm font-semibold" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
+                          {price.toLocaleString('es-MX', { minimumFractionDigits: 2, style: 'currency', currency: country === 'USD' ? 'USD' : country === 'EUR' ? 'EUR' : country === 'COP' ? 'COP' : 'MXN' })}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            }
+
+            // Has kit — show parent with total price, children without prices
+            const childrenTotal = childItems.reduce(
+              (sum, { product, quantity }) => sum + getProductPrice(product, country, membership) * quantity,
+              0
+            )
+
+            return (
+              <div className="flex flex-col gap-2">
+                {kitParents.map(({ product, quantity }) => (
+                  <div key={product.code} className="flex justify-between items-center">
+                    <span className="text-sm" style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}>
+                      {product.name} × {quantity}
+                    </span>
+                    <span className="text-sm font-semibold" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
+                      {childrenTotal.toLocaleString('es-MX', { minimumFractionDigits: 2, style: 'currency', currency: country === 'USD' ? 'USD' : country === 'EUR' ? 'EUR' : country === 'COP' ? 'COP' : 'MXN' })}
+                    </span>
+                  </div>
+                ))}
+                {childItems.map(({ product, quantity }) => (
+                  <div key={product.code} className="flex justify-between items-center pl-4">
+                    <span className="text-sm" style={{ color: '#6B7280', fontFamily: 'Poppins, sans-serif' }}>
+                      {product.name} × {quantity}
+                    </span>
+                    {/* No price shown for kit children */}
+                  </div>
+                ))}
+                {membershipItems.map(({ product, quantity }) => {
+                  const price = getProductPrice(product, country, membership) * quantity
+                  return (
+                    <div key={product.code} className="flex justify-between items-center">
+                      <span className="text-sm" style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}>
+                        {product.name} × {quantity}
+                      </span>
+                      <span className="text-sm font-semibold" style={{ color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
+                        {price.toLocaleString('es-MX', { minimumFractionDigits: 2, style: 'currency', currency: country === 'USD' ? 'USD' : country === 'EUR' ? 'EUR' : country === 'COP' ? 'COP' : 'MXN' })}
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
-            ))}
-          </div>
+            )
+          })()}
           <div
             className="flex justify-between items-center mt-3 pt-3"
             style={{ borderTop: '1px solid #EAECF0' }}

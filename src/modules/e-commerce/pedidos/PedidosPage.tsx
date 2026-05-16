@@ -13,7 +13,6 @@ import { PDFDropdownButton } from './components/PDFDropdownButton.tsx'
 import {
   formatOrderStatus,
   formatPaymentMethod,
-  formatShippingMethod,
   formatDateTime,
   OrderStatus,
 } from '../../../lib/formatters.ts'
@@ -72,7 +71,11 @@ function formatMXN(amount: number | null | undefined): string {
 
 function getShippingLabel(order: OrderWithItems): string {
   const sd = order.shipping_data as ShippingData
-  return formatShippingMethod(sd, order.cedi_name ?? undefined)
+  if (!sd) return '—'
+  // Read method directly from shipping_data.type
+  if (sd.type === 'domicilio') return 'Domicilio'
+  if (sd.type === 'cedi') return order.cedi_name ?? 'CEDI'
+  return '—'
 }
 
 /** Check if an order display object is a network order (has buyer info). */
@@ -417,7 +420,7 @@ function OrderCard({ order, profile, showBuyerInfo, buyerName, treeLevel }: Orde
               className="text-xs"
               style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}
             >
-              {item.product_name ?? item.product_code} ×{item.quantity} = {formatMXN(item.total_amount)}
+              {item.product_name ?? item.product_code} ×{item.quantity}
             </p>
           ))}
         </div>
