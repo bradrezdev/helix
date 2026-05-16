@@ -125,17 +125,17 @@ export function VolumenCard({
 
         {/* Metric grid: 2 cols mobile, 3 cols sm+ */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {/* PV Personal */}
+          {/* PV Red */}
           <div>
-            <p className="text-xs text-[#9CA3AF]">PV Personal</p>
+            <p className="text-xs text-[#9CA3AF]">PV Red</p>
             <p className="text-lg font-bold text-[#062A63]">
               {formatInt(periodo.personal_pv)}
             </p>
           </div>
 
-          {/* CV Personal */}
+          {/* CV Red */}
           <div>
-            <p className="text-xs text-[#9CA3AF]">CV Personal</p>
+            <p className="text-xs text-[#9CA3AF]">CV Red</p>
             <p className="text-lg font-bold text-[#062A63]">
               {formatMXN(periodo.personal_cv)}
             </p>

@@ -136,7 +136,7 @@ export function CartSheet({
         <div className="flex-1 overflow-y-auto px-5 pb-2 flex flex-col gap-2">
           {items.map(({ product, quantity }) => {
             const isKitProduct = isKitMode && product.is_kit
-            const isAddon = isKitMode && !product.is_kit
+            const isAddon = isKitMode && !product.is_kit && product.kit_type !== 'membresia'
 
             return (
               <div

@@ -85,8 +85,20 @@ export const useCart = create<CartStore>()(
   },
 
   remove: (code) => {
-    // Remove specific item — no cart clearing for kit mode
-    set((s) => ({ items: s.items.filter((i) => i.product.code !== code) }))
+    const state = get()
+    const item = state.items.find((i) => i.product.code === code)
+    // When removing a kit, cascade to children (non-kit, non-membership)
+    if (item && item.product.is_kit && item.product.kit_type !== 'membresia') {
+      set((s) => ({
+        items: s.items.filter((i) => {
+          if (i.product.code === code) return false
+          if (!i.product.is_kit && i.product.kit_type !== 'membresia') return false
+          return true
+        }),
+      }))
+    } else {
+      set((s) => ({ items: s.items.filter((i) => i.product.code !== code) }))
+    }
   },
 
   increment: (code) => {
@@ -105,14 +117,26 @@ export const useCart = create<CartStore>()(
   },
 
   decrement: (code) => {
-    // Decrement specific item — no cart clearing for kit mode
-    set((s) => ({
-      items: s.items
-        .map((i) =>
-          i.product.code === code ? { ...i, quantity: i.quantity - 1 } : i
-        )
-        .filter((i) => i.quantity > 0),
-    }))
+    const state = get()
+    const item = state.items.find((i) => i.product.code === code)
+    // When removing a kit (qty 1 -> 0), cascade to children
+    if (item && item.quantity === 1 && item.product.is_kit && item.product.kit_type !== 'membresia') {
+      set((s) => ({
+        items: s.items.filter((i) => {
+          if (i.product.code === code) return false
+          if (!i.product.is_kit && i.product.kit_type !== 'membresia') return false
+          return true
+        }),
+      }))
+    } else {
+      set((s) => ({
+        items: s.items
+          .map((i) =>
+            i.product.code === code ? { ...i, quantity: i.quantity - 1 } : i
+          )
+          .filter((i) => i.quantity > 0),
+      }))
+    }
   },
 
   clear: () => set({ items: [] }),
