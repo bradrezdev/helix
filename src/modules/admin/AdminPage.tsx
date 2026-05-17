@@ -120,6 +120,9 @@ function CierreDeMessSection() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<{ processed_at: string; month: number; year: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [cpLoading, setCpLoading] = useState(false)
+  const [cpResult, setCpResult] = useState<{ processed_at: string; month: number; year: number } | null>(null)
+  const [cpError, setCpError] = useState<string | null>(null)
 
   async function handleExecute() {
     if (!session) return
@@ -145,10 +148,67 @@ function CierreDeMessSection() {
     }
   }
 
+  async function handleCerrarPeriodoActual() {
+    if (!session) return
+    const now = new Date()
+    const currentMonth = now.getMonth() + 1
+    const currentYear = now.getFullYear()
+    setCpLoading(true)
+    setCpError(null)
+    setCpResult(null)
+    try {
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/monthly-closure`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ month: currentMonth, year: currentYear, dry_run: false }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(typeof json.error === 'string' ? json.error : json.error ? JSON.stringify(json.error) : (json.message ?? `Error ${res.status}`))
+      setCpResult(json)
+    } catch (e) {
+      setCpError(e instanceof Error ? e.message : 'Error desconocido')
+    } finally {
+      setCpLoading(false)
+    }
+  }
+
   return (
     <Card>
       <SectionLabel>Cierre de Mes</SectionLabel>
       <div className="space-y-4">
+        {/* Botón: Cerrar Periodo Actual */}
+        <button
+          onClick={handleCerrarPeriodoActual}
+          disabled={cpLoading}
+          className="flex items-center justify-center gap-2 w-full h-14 rounded-[32px] text-base font-bold text-white disabled:opacity-60 transition-all active:scale-95 shadow-[0_4px_14px_rgba(6,42,99,0.25)]"
+          style={{ background: 'linear-gradient(135deg, #062A63, #0CBCE5)', fontFamily: 'Poppins, sans-serif' }}
+        >
+          {cpLoading && <Spinner />}
+          {cpLoading ? 'Cerrando periodo...' : 'Cerrar Periodo Actual'}
+        </button>
+        <p className="text-xs text-center" style={{ color: '#9CA3AF', fontFamily: 'Poppins, sans-serif' }}>
+          Cierra el periodo actual sin seleccionar fechas
+        </p>
+
+        {cpResult && (
+          <div className="rounded-[18px] bg-[#F2F4F9] border border-[#EAECF0] p-4 text-sm space-y-1">
+            <p className="font-semibold text-[#062A63]">Periodo cerrado correctamente</p>
+            <p style={{ color: '#383A3F' }}>Período: {cpResult.month}/{cpResult.year}</p>
+            <p style={{ color: '#383A3F' }}>Procesado: {new Date(cpResult.processed_at).toLocaleString('es-MX')}</p>
+          </div>
+        )}
+        {cpError && (
+          <div className="rounded-[18px] bg-red-50 border border-red-200 p-4 text-sm text-red-600">
+            {cpError}
+          </div>
+        )}
+
+        {/* Separator */}
+        <div className="border-t border-[#EAECF0]" />
+
         <MonthYearPicker month={month} year={year} onMonthChange={setMonth} onYearChange={setYear} />
         <DryRunToggle value={dryRun} onChange={setDryRun} />
         <button
@@ -1352,7 +1412,7 @@ function PlaceMemberCard({
     } catch (e) {
       setPlaceError(e instanceof Error ? e.message : 'Error desconocido')
     } finally {
-      setPlacing(false)
+      setLoading(false)
     }
   }
 
@@ -1552,7 +1612,7 @@ function HoldingTankSection() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error desconocido')
     } finally {
-      setResetLoading(false)
+      setLoading(false)
     }
   }
 
