@@ -18,6 +18,7 @@ export interface ComisionNivelSocio {
   ganancia: number          // commission amount
   currency: string          // 'MXN', 'USD', etc.
   source_order_code: string // human-readable order ID
+  calculated_at: string     // ISO timestamp when commission was calculated
 }
 
 export interface UseComisionesNivelSociosParams {

@@ -43,10 +43,9 @@ const YEAR_OPTIONS = Array.from({ length: 3 }, (_, i) => currentYear - i)
 // get_comisiones_nivel_socios expects 'YYYY-M' or 'todos'
 
 function buildPeriodo(month: number | null, year: number | null): string {
-  if (month == null && year == null) return 'todos'
+  if (month == null) return 'todos'
   const y = year ?? currentYear
-  const m = month ?? 1
-  return `${y}-${m}`
+  return `${y}-${month}`
 }
 
 // ─── Shared select styles ─────────────────────────────────────────────────────
@@ -177,9 +176,13 @@ export default function ComisionesNivelPage() {
     if (error) return <ErrorCard onRetry={refetch} />
     if (niveles.length === 0) return <EmptyState />
 
+    const filteredNiveles = niveles.filter(n => n.level > 0)
+
+    if (filteredNiveles.length === 0) return <EmptyState />
+
     return (
       <div className="space-y-3">
-        {niveles.map((nivel) => (
+        {filteredNiveles.map((nivel) => (
           <NivelAccordion
             key={nivel.level}
             nivel={nivel}

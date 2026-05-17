@@ -150,11 +150,12 @@ export default function BonoDetail() {
           {label}
         </h1>
         <p
-          className="text-2xl font-bold mt-1"
+          className="text-2xl font-bold mt-1 flex items-center gap-1"
           style={{ color: '#062A63' }}
           data-testid="bono-detail-total"
         >
           {formatCurrency(total, displayCurrency)}
+          <CurrencyBadge currency={displayCurrency} />
         </p>
         <p className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>
           {(commissions ?? []).length} {(commissions ?? []).length === 1 ? 'transacción' : 'transacciones'}
