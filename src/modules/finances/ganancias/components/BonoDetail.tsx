@@ -1,6 +1,8 @@
 // ─── BonoDetail ───────────────────────────────────────────────────────────────
 // Detail page for a specific bonus type reached via /ganancias/$bonoType.
-// Shows a header summary card and a transaction table with order details.
+// Shows a header summary card and a transaction table using get_comisiones_detalle.
+//
+// Columns: Origen (source_name) | # Orden (source_order_code) | PV | CV | % | Monto
 //
 // Intent: Distribuidor que hizo clic en una card de bono y quiere ver el detalle
 //          de cada transacción — origen, orden, PV, CV, montos.
@@ -8,83 +10,40 @@
 //
 // Palette: ONANO primary #062A63, accents from GANANCIAS_BONO_COLORS,
 //          background #F2F4F9, border #EAECF0, muted #9CA3AF, text #383A3F.
-// Depth: Subtle shadow on cards, no heavy elevations.
-// Typography: Poppins everywhere, bold for numbers, regular for labels.
+// Depth: Borde sutil + shadow Apple-style en cards.
+// Typography: Poppins para datos financieros.
 
 import { useParams, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, CheckCircle2 } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
+import { ArrowLeft } from 'lucide-react'
 import { useAuth } from '../../../auth/hooks/useAuth.ts'
 import { useProfile } from '../../../auth/hooks/useProfile.ts'
-import { supabase } from '../../../../lib/supabase.ts'
-import { BONO_TYPE_LABELS } from '../../../../lib/formatters.ts'
+import { useComisionesDetalle } from '../../comisiones/hooks/useComisionesDetalle.ts'
+import { BONO_TYPE_LABELS, formatCurrency } from '../../../../lib/formatters.ts'
 import { getBonoColor } from '../constants.ts'
 
-// ─── Types ──────────────────────────────────────────────────────────────────────
-
-interface CommissionDetail {
-  id: string
-  amount: number
-  level: number | null
-  calculated_at: string
-  bono_type: string
-  source_order_id: string | null
-  source_user_id: string | null
-  process_verified: boolean
-  source_order: {
-    order_id: string
-    pv: number
-    cv: number
-    total_amount: number
-  } | null
-  source_user: {
-    user_id: number
-    name: string
-    apellidos: string
-  } | null
-}
-
-// ─── Bonus type display labels ──────────────────────────────────────────────────
-
-const BONO_LABELS = BONO_TYPE_LABELS
-
-// ─── Format helpers ─────────────────────────────────────────────────────────────
-
-const currency = new Intl.NumberFormat('es-MX', {
-  style: 'currency',
-  currency: 'MXN',
-})
-
-function formatCurrencyMXN(amount: number): string {
-  return currency.format(amount)
-}
+// ─── Remove the local BONO_LABELS alias — we use BONO_TYPE_LABELS directly
 
 // ─── Sub-components ─────────────────────────────────────────────────────────────
 
 function LoadingSkeleton() {
   return (
     <div className="max-w-[1920px] mx-auto px-4 py-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
-      {/* Back button skeleton */}
       <div className="h-6 w-20 bg-[#F2F4F9] rounded mb-4 animate-pulse" />
-
-      {/* Header card skeleton */}
       <div className="rounded-[24px] p-5 shadow-[0_4px_24px_rgba(6,42,99,0.07)] mb-4 animate-pulse">
         <div className="h-6 w-40 bg-[#F2F4F9] rounded mb-3" />
         <div className="h-8 w-48 bg-[#F2F4F9] rounded mb-2" />
         <div className="h-4 w-32 bg-[#F2F4F9] rounded" />
       </div>
-
-      {/* Table skeleton */}
       <div className="bg-white rounded-[24px] shadow-[0_4px_24px_rgba(6,42,99,0.07)] overflow-hidden">
-        <div className="grid grid-cols-12 bg-[#F2F4F9] px-4 py-2.5">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <div key={i} className="h-3 bg-[#E5E7EB] rounded animate-pulse" style={{ width: i <= 2 || i === 4 ? '64px' : '40px' }} />
+        <div className="grid grid-cols-6 bg-[#F2F4F9] px-4 py-2.5">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="h-3 bg-[#E5E7EB] rounded animate-pulse" style={{ width: i <= 1 ? '100px' : i === 2 ? '80px' : '50px' }} />
           ))}
         </div>
         {[1, 2, 3, 4, 5].map((row) => (
-          <div key={row} className="grid grid-cols-12 px-4 py-3 border-b border-[#EAECF0] last:border-0">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((col) => (
-              <div key={col} className="h-4 bg-[#F2F4F9] rounded animate-pulse" style={{ width: col <= 2 || col === 4 ? '64px' : '40px' }} />
+          <div key={row} className="grid grid-cols-6 px-4 py-3 border-b border-[#EAECF0] last:border-0">
+            {[1, 2, 3, 4, 5, 6].map((col) => (
+              <div key={col} className="h-4 bg-[#F2F4F9] rounded animate-pulse" style={{ width: col <= 1 ? '100px' : col === 2 ? '80px' : '50px' }} />
             ))}
           </div>
         ))}
@@ -106,13 +65,28 @@ function NotFoundCard() {
         <ArrowLeft size={16} />
         Volver
       </button>
-
       <div className="bg-white rounded-[24px] shadow-[0_4px_24px_rgba(6,42,99,0.07)] p-8 text-center">
         <p className="text-sm" style={{ color: '#9CA3AF' }}>
           Bono no encontrado
         </p>
       </div>
     </div>
+  )
+}
+
+// ─── Currency badge component ──────────────────────────────────────────────────
+
+function CurrencyBadge({ currency }: { currency: string }) {
+  return (
+    <span
+      className="inline-flex items-center text-[10px] font-semibold uppercase rounded-full px-1.5 py-0.5 ml-1.5 shrink-0"
+      style={{
+        backgroundColor: 'rgba(12,188,229,0.10)',
+        color: '#0CBCE5',
+      }}
+    >
+      {currency}
+    </span>
   )
 }
 
@@ -124,31 +98,16 @@ export default function BonoDetail() {
   const { user } = useAuth()
   const { profile } = useProfile(user?.id ?? '')
 
-  const label = BONO_LABELS[bonoType]
+  const label = BONO_TYPE_LABELS[bonoType]
   const color = getBonoColor(bonoType)
 
-  // ── Fetch commissions with order + user details for this bonus type ──
+  // ── Fetch detalle comisiones via RPC ──
   const {
     data: commissions,
     isLoading,
-  } = useQuery({
-    queryKey: ['bono-detail', bonoType, profile?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('commissions')
-        .select(`
-          id, amount, level, calculated_at, bono_type,
-          source_order_id, source_user_id, process_verified,
-          source_order:orders!commissions_source_order_id_fkey(order_id, pv, cv, total_amount),
-          source_user:users!commissions_source_user_id_fkey(user_id, name, apellidos)
-        `)
-        .eq('user_id', profile?.id)
-        .eq('bono_type', bonoType)
-        .order('calculated_at', { ascending: false })
-      return (data ?? []) as unknown as CommissionDetail[]
-    },
-    enabled: !!profile?.id,
-    staleTime: 5 * 60 * 1000,
+  } = useComisionesDetalle({
+    userId: profile?.id,
+    bonoType,
   })
 
   // ── Validate bonoType ──
@@ -162,6 +121,7 @@ export default function BonoDetail() {
   }
 
   const total = (commissions ?? []).reduce((sum, c) => sum + c.amount, 0)
+  const displayCurrency = (commissions ?? [])[0]?.currency ?? 'MXN'
 
   // ── Render ──
   return (
@@ -186,10 +146,7 @@ export default function BonoDetail() {
         className="rounded-[24px] p-5 shadow-[0_4px_24px_rgba(6,42,99,0.07)] mb-4 bg-white"
         style={{ borderLeft: `3px solid ${color}` }}
       >
-        <h1
-          className="text-xl font-bold"
-          style={{ color: '#062A63' }}
-        >
+        <h1 className="text-xl font-bold" style={{ color: '#062A63' }}>
           {label}
         </h1>
         <p
@@ -197,12 +154,9 @@ export default function BonoDetail() {
           style={{ color: '#062A63' }}
           data-testid="bono-detail-total"
         >
-          {formatCurrencyMXN(total)}
+          {formatCurrency(total, displayCurrency)}
         </p>
-        <p
-          className="text-xs"
-          style={{ color: '#9CA3AF' }}
-        >
+        <p className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>
           {(commissions ?? []).length} {(commissions ?? []).length === 1 ? 'transacción' : 'transacciones'}
         </p>
       </div>
@@ -221,84 +175,57 @@ export default function BonoDetail() {
         <div className="bg-white rounded-[24px] shadow-[0_4px_24px_rgba(6,42,99,0.07)] overflow-hidden">
           {/* Table header */}
           <div
-            className="grid grid-cols-12 px-4 py-2.5 text-xs uppercase tracking-wide gap-x-2"
+            className="grid grid-cols-[1fr_120px_100px_100px_80px_140px] items-center px-4 py-2.5 text-xs uppercase tracking-wide gap-x-2"
             style={{ backgroundColor: '#F2F4F9', color: '#9CA3AF' }}
           >
-            <span className="col-span-2">Origen</span>
-            <span className="col-span-1">ID</span>
-            <span className="col-span-3">Nombre Completo</span>
-            <span className="col-span-2">Orden #</span>
-            <span className="col-span-1 text-right">PV</span>
-            <span className="col-span-1 text-right">CV</span>
-            <span className="col-span-1 text-right">Monto</span>
-            <span className="col-span-1 text-right">%</span>
+            <span>Origen</span>
+            <span className="text-center"># Orden</span>
+            <span className="text-right">PV</span>
+            <span className="text-right">CV</span>
+            <span className="text-right">%</span>
+            <span className="text-right">Monto</span>
           </div>
 
           {/* Table rows */}
           {commissions.map((c) => {
-            const cv = c.source_order?.cv ?? 0
-            const pct = cv > 0 ? (c.amount / cv) * 100 : 0
-            const fullName = c.source_user
-              ? [c.source_user.name, c.source_user.apellidos].filter(Boolean).join(' ')
-              : null
+            const pct = c.percentage
 
             return (
               <div
-                key={c.id}
-                className="grid grid-cols-12 px-4 py-2.5 border-b border-[#EAECF0] last:border-0 text-sm gap-x-2 items-center"
+                key={c.commission_id}
+                className="grid grid-cols-[1fr_120px_100px_100px_80px_140px] items-center px-4 py-2.5 border-b border-[#EAECF0] last:border-0 text-sm gap-x-2"
                 style={{ color: '#383A3F' }}
-                data-testid={`bono-detail-transaction-${c.id}`}
+                data-testid={`bono-detail-transaction-${c.commission_id}`}
               >
-                {/* Origen */}
-                <span className="col-span-2 flex items-center gap-1.5 truncate">
-                  {c.process_verified && (
-                    <CheckCircle2 size={14} className="text-green-500 shrink-0" />
-                  )}
-                  {fullName ?? '\u2014'}
+                {/* Origen — source_name ya viene "Nombre Apellidos" del RPC */}
+                <span className="truncate" title={c.source_name}>
+                  {c.source_name || '—'}
                 </span>
 
-                {/* ID — source user's bigint display ID */}
-                <span className="col-span-1 font-mono text-xs">
-                  {c.source_user?.user_id?.toString() ?? '\u2014'}
-                </span>
-
-                {/* Nombre Completo */}
-                <span className="col-span-3 truncate">
-                  {fullName ?? '\u2014'}
-                </span>
-
-                {/* Orden # */}
-                <span className="col-span-2 truncate font-mono text-xs">
-                  {c.source_order?.order_id ?? '\u2014'}
+                {/* # Orden — código legible */}
+                <span className="text-center font-mono text-xs text-[#0CBCE5]">
+                  {c.source_order_code || '—'}
                 </span>
 
                 {/* PV */}
-                <span className="col-span-1 text-right">
-                  {c.source_order != null
-                    ? Number(c.source_order.pv).toFixed(2)
-                    : '\u2014'}
+                <span className="text-right">
+                  {c.pv.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                 </span>
 
                 {/* CV */}
-                <span className="col-span-1 text-right">
-                  {c.source_order != null
-                    ? Number(c.source_order.cv).toFixed(2)
-                    : '\u2014'}
-                </span>
-
-                {/* Monto */}
-                <span
-                  className="col-span-1 text-right font-semibold"
-                  style={{ color: '#062A63' }}
-                >
-                  {formatCurrencyMXN(c.amount)}
+                <span className="text-right">
+                  {c.cv.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                 </span>
 
                 {/* % */}
-                <span className="col-span-1 text-right text-xs">
-                  {c.source_order != null && cv > 0
-                    ? `${pct.toFixed(1)}%`
-                    : '\u2014'}
+                <span className="text-right text-xs text-[#9CA3AF]">
+                  {pct != null ? `${pct.toFixed(1)}%` : '—'}
+                </span>
+
+                {/* Monto + currency badge */}
+                <span className="text-right font-semibold text-[#062A63] flex items-center justify-end gap-1">
+                  {formatCurrency(c.amount, c.currency)}
+                  <CurrencyBadge currency={c.currency} />
                 </span>
               </div>
             )

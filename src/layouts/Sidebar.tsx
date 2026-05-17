@@ -11,7 +11,6 @@ import {
   Plane,
   Calculator,
   ShieldCheck,
-  TrendingUp,
   PanelLeftClose,
   PanelLeftOpen,
   ChevronDown,
@@ -102,7 +101,7 @@ function SidebarMenuItem({
  * Submenu child routes — used to detect whether the group is active
  * (any child route matches the current path).
  */
-const NEGOCIO_CHILD_ROUTES = ['/network', '/historial-volumen', '/ganancias', '/comisiones', '/inscripciones']
+const NEGOCIO_CHILD_ROUTES = ['/network', '/ganancias', '/comisiones', '/inscripciones']
 const TIENDA_CHILD_ROUTES = ['/tienda', '/ordenes']
 
 function SidebarMenuGroup({
@@ -263,13 +262,6 @@ export function Sidebar() {
               icon={Network}
               label="Árbol Uninivel"
               to="/network"
-              indent
-              collapsed={sidebarCollapsed}
-            />
-            <SidebarMenuItem
-              icon={TrendingUp}
-              label="Historial de Volumen"
-              to="/historial-volumen"
               indent
               collapsed={sidebarCollapsed}
             />

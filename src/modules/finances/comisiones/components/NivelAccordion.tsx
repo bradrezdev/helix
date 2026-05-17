@@ -1,29 +1,68 @@
 // ─── NivelAccordion ────────────────────────────────────────────────────────────
 // Expandable card for a single commission level.
-// Header shows level summary (socio count, PV, CV total); body lists SocioRow
-// components when expanded. Active left border (#0CBCE5) when open.
+// Header shows level summary (socio count, PV, CV total).
+// Body lists individual commissions with Bono | Origen | PV | CV | % | Ganancia.
+// Active left border (#0CBCE5) when open.
+//
+// Intent: Distribuidor ONANO revisando comisiones por nivel.
+// Feel: Preciso como reporte financiero — cada comisión rastreable.
 
 import { ChevronDown } from 'lucide-react'
 import { cn } from '../../../../lib/utils.ts'
-
-import SocioRow from './SocioRow.tsx'
+import { formatBonoType, formatCurrency } from '../../../../lib/formatters.ts'
 import type { ComisionNivel } from '../hooks/useComisionesNivel.ts'
-import type { SocioNivel } from '../../../network/inscripciones/hooks/useSociosNivel.ts'
+import type { ComisionNivelSocio } from '../hooks/useComisionesNivelSocios.ts'
 
 interface NivelAccordionProps {
   nivel: ComisionNivel
   expanded: boolean
   onToggle: () => void
-  socios: SocioNivel[]
-  isLoadingSocios: boolean
+  comisiones: ComisionNivelSocio[]
+  isLoadingComisiones: boolean
 }
+
+// ─── Loading skeleton for expanded body ─────────────────────────────────────────
+
+function BodySkeleton() {
+  return (
+    <div className="space-y-2 p-4">
+      {[1, 2, 3].map((i) => (
+        <div
+          key={i}
+          className="h-10 animate-pulse bg-[#F2F4F9] rounded-[12px]"
+        />
+      ))}
+    </div>
+  )
+}
+
+// ─── Table header row ───────────────────────────────────────────────────────────
+
+function TableHeader() {
+  const cols = ['Bono', 'Origen', 'PV', 'CV', '%', 'Ganancia']
+  return (
+    <div
+      className="grid grid-cols-[100px_1fr_80px_80px_70px_120px] items-center gap-2 bg-[#F2F4F9] text-[#9CA3AF] text-xs font-medium uppercase py-2.5 px-4"
+      style={{ fontFamily: 'Poppins, sans-serif' }}
+      role="row"
+    >
+      {cols.map((label) => (
+        <div key={label} role="columnheader" className={label === 'Ganancia' ? 'text-right' : ''}>
+          {label}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ─── Main component ─────────────────────────────────────────────────────────────
 
 export default function NivelAccordion({
   nivel,
   expanded,
   onToggle,
-  socios,
-  isLoadingSocios,
+  comisiones,
+  isLoadingComisiones,
 }: NivelAccordionProps) {
   return (
     <div
@@ -48,35 +87,36 @@ export default function NivelAccordion({
             Nivel {nivel.level}
           </span>
 
-          <span aria-hidden="true" className="text-[#EAECF0]">
-            —
-          </span>
+          <span aria-hidden="true" className="text-[#EAECF0]">—</span>
 
           {/* Socios count */}
           <span className="text-[#383A3F]" data-testid={`nivel-count-${nivel.level}`}>
             {nivel.total_socios} {nivel.total_socios === 1 ? 'socio' : 'socios'}
           </span>
 
-          <span aria-hidden="true" className="text-[#EAECF0]">
-            —
-          </span>
+          <span aria-hidden="true" className="text-[#EAECF0]">—</span>
 
           {/* PV total */}
           <span className="text-[#383A3F]">
             PV: {nivel.total_pv.toLocaleString('es-MX')}
           </span>
 
-          <span aria-hidden="true" className="text-[#EAECF0]">
-            —
-          </span>
+          <span aria-hidden="true" className="text-[#EAECF0]">—</span>
 
-          {/* CV total — volumen */}
+          {/* CV total */}
           <span className="text-[#383A3F]">
             CV: {nivel.total_cv.toLocaleString('es-MX')}
           </span>
+
+          <span aria-hidden="true" className="text-[#EAECF0]">—</span>
+
+          {/* Total amount */}
+          <span className="font-semibold text-[#062A63]">
+            {formatCurrency(nivel.total_amount, 'MXN')}
+          </span>
         </div>
 
-        {/* Chevron — rotates 180° when expanded */}
+        {/* Chevron */}
         <ChevronDown
           size={20}
           color="#062A63"
@@ -90,27 +130,52 @@ export default function NivelAccordion({
       {/* ── Body (conditional) ── */}
       {expanded && (
         <div className="border-t border-[#EAECF0] overflow-x-auto">
-          {isLoadingSocios ? (
-            /* Skeleton loading rows */
-            <div className="space-y-2 p-4">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="h-10 animate-pulse bg-[#F2F4F9] rounded-[12px]"
-                />
-              ))}
-            </div>
-          ) : socios.length === 0 ? (
-            /* Empty body state */
+          {isLoadingComisiones ? (
+            <BodySkeleton />
+          ) : comisiones.length === 0 ? (
             <div className="p-6 text-center text-sm text-[#9CA3AF]">
-              Sin socios en este nivel para el periodo seleccionado.
+              Sin comisiones en este nivel para el periodo seleccionado.
             </div>
           ) : (
-            /* Socio table */
-            <div role="table" aria-label={`Socios del nivel ${nivel.level}`}>
-              <SocioRow socio={{} as SocioNivel} isHeader />
-              {socios.map((socio) => (
-                <SocioRow key={socio.user_id} socio={socio} />
+            <div role="table" aria-label={`Comisiones del nivel ${nivel.level}`}>
+              <TableHeader />
+              {comisiones.map((c, idx) => (
+                <div
+                  key={`${c.socio_user_id}-${c.bono_type}-${c.source_order_code}-${idx}`}
+                  className="grid grid-cols-[100px_1fr_80px_80px_70px_120px] items-center gap-2 py-2.5 px-4 border-b border-[#EAECF0] last:border-0 text-sm"
+                  style={{ color: '#383A3F', fontFamily: 'Poppins, sans-serif' }}
+                  role="row"
+                >
+                  {/* Bono type */}
+                  <span className="text-xs font-medium text-[#0CBCE5]" role="cell">
+                    {formatBonoType(c.bono_type)}
+                  </span>
+
+                  {/* Origen — full name */}
+                  <span className="truncate text-sm" role="cell" title={c.socio_name}>
+                    {c.socio_name}
+                  </span>
+
+                  {/* PV */}
+                  <span className="text-sm" role="cell">
+                    {c.pv.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                  </span>
+
+                  {/* CV */}
+                  <span className="text-sm" role="cell">
+                    {c.cv.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                  </span>
+
+                  {/* % */}
+                  <span className="text-xs text-[#9CA3AF]" role="cell">
+                    {c.percentage != null ? `${c.percentage.toFixed(1)}%` : '—'}
+                  </span>
+
+                  {/* Ganancia */}
+                  <span className="text-right font-semibold text-[#062A63]" role="cell">
+                    {formatCurrency(c.ganancia, c.currency)}
+                  </span>
+                </div>
               ))}
             </div>
           )}

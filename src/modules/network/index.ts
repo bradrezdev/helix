@@ -18,5 +18,3 @@ export { HoldingTankSection } from './negocio/HoldingTankSection'
 // Inscripciones — export default
 export { default as HoldingTankPage } from './inscripciones/HoldingTankPage'
 
-// Historial volumen — export default
-export { default as HistorialVolumenPage } from './historial-volumen/HistorialVolumenPage'

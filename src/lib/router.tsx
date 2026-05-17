@@ -293,12 +293,6 @@ const gananciasBonoRoute = createRoute({
   component: () => <BonoDetail />,
 })
 
-const historialVolumenRoute = createRoute({
-  getParentRoute: () => authenticatedRoute,
-  path: '/historial-volumen',
-  beforeLoad: () => { throw redirect({ to: '/comisiones' }) },
-})
-
 const inscripcionesRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/inscripciones',
@@ -337,7 +331,6 @@ const routeTree = rootRoute.addChildren([
     comisionesRoute,
     gananciasRoute,
     gananciasBonoRoute,
-    historialVolumenRoute,
     inscripcionesRoute,
     supportRoute,
   ]),

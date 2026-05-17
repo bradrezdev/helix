@@ -1,19 +1,24 @@
 // ─── ComisionesNivelPage ───────────────────────────────────────────────────────
 // Page displaying commissions grouped by genealogy level.
 // Period filtering via month/year dropdowns; drill-down per level via accordion.
+// Expanded level shows individual commissions: Bono | Origen | PV | CV | % | Ganancia
+//
+// Uses:
+//   get_comisiones_nivel_all → level summaries (header)
+//   get_comisiones_nivel_socios → individual commissions (expanded body)
 //
 // States: loading (skeleton cards), error (retry card), empty (info card),
 //          filtered empty (info card), data (accordion list).
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { useAuth } from '../../auth/hooks/useAuth.ts'
 import { useProfile } from '../../auth/hooks/useProfile.ts'
 import { useComisionesNivel } from './hooks/useComisionesNivel.ts'
-import { useSociosNivel } from '../../network/inscripciones/hooks/useSociosNivel.ts'
+import { useComisionesNivelSocios } from './hooks/useComisionesNivelSocios.ts'
 import NivelAccordion from './components/NivelAccordion.tsx'
 
-// ─── Month options for the select ──────────────────────────────────────────────
+// ─── Month options ──────────────────────────────────────────────────────────────
 
 const MONTH_OPTIONS: { label: string; value: number | null }[] = [
   { label: 'Todos los meses', value: null },
@@ -32,8 +37,17 @@ const MONTH_OPTIONS: { label: string; value: number | null }[] = [
 ]
 
 const currentYear = new Date().getFullYear()
-
 const YEAR_OPTIONS = Array.from({ length: 3 }, (_, i) => currentYear - i)
+
+// ─── Build periodo string for the RPC ──────────────────────────────────────────
+// get_comisiones_nivel_socios expects 'YYYY-M' or 'todos'
+
+function buildPeriodo(month: number | null, year: number | null): string {
+  if (month == null && year == null) return 'todos'
+  const y = year ?? currentYear
+  const m = month ?? 1
+  return `${y}-${m}`
+}
 
 // ─── Shared select styles ─────────────────────────────────────────────────────
 
@@ -116,7 +130,13 @@ export default function ComisionesNivelPage() {
   // ── Accordion expansion ──
   const [expandedLevel, setExpandedLevel] = useState<number | null>(null)
 
-  // ── Data queries ──
+  // ── Derived periodo string ──
+  const periodo = useMemo(
+    () => buildPeriodo(selectedMonth, selectedYear),
+    [selectedMonth, selectedYear],
+  )
+
+  // ── Level summaries ──
   const {
     data: niveles = [],
     isLoading,
@@ -128,17 +148,20 @@ export default function ComisionesNivelPage() {
     year: selectedYear,
   })
 
-  const { data: socios = [], isLoading: sociosLoading } = useSociosNivel({
+  // ── Individual commissions for expanded level ──
+  const {
+    data: comisiones = [],
+    isLoading: comisionesLoading,
+  } = useComisionesNivelSocios({
     userId: profile?.id,
-    level: expandedLevel,
-    month: selectedMonth,
-    year: selectedYear,
+    nivel: expandedLevel,
+    periodo,
   })
 
   // ── Handlers ──
-  const handleToggle = (level: number) => {
+  const handleToggle = useCallback((level: number) => {
     setExpandedLevel((prev) => (prev === level ? null : level))
-  }
+  }, [])
 
   const handleMonthChange = (value: string) => {
     setSelectedMonth(value === '' ? null : Number(value))
@@ -155,15 +178,15 @@ export default function ComisionesNivelPage() {
     if (niveles.length === 0) return <EmptyState />
 
     return (
-    <div className="space-y-3" data-testid="comisiones-loading">
+      <div className="space-y-3">
         {niveles.map((nivel) => (
           <NivelAccordion
             key={nivel.level}
             nivel={nivel}
             expanded={expandedLevel === nivel.level}
             onToggle={() => handleToggle(nivel.level)}
-            socios={expandedLevel === nivel.level ? socios : []}
-            isLoadingSocios={expandedLevel === nivel.level && sociosLoading}
+            comisiones={expandedLevel === nivel.level ? comisiones : []}
+            isLoadingComisiones={expandedLevel === nivel.level && comisionesLoading}
           />
         ))}
       </div>
@@ -182,7 +205,6 @@ export default function ComisionesNivelPage() {
 
       {/* ── Period selector ── */}
       <div className="flex gap-2 mb-5">
-        {/* Year dropdown */}
         <select
           value={selectedYear ?? ''}
           onChange={(e) => handleYearChange(e.target.value)}
@@ -198,7 +220,6 @@ export default function ComisionesNivelPage() {
           ))}
         </select>
 
-        {/* Month dropdown */}
         <select
           value={selectedMonth ?? ''}
           onChange={(e) => handleMonthChange(e.target.value)}
