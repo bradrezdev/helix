@@ -1014,6 +1014,13 @@ function AsignarOrdenSection() {
           </div>
         </div>
 
+        {/* Tree indicator badge */}
+        <div className="flex items-center justify-center">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold" style={{ background: 'rgba(6,42,99,0.06)', color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
+            {orderType === 'kit' ? '🔗 Árbol de Patrocinio (sponsor_id)' : '🌳 Árbol Uninivel (colocación)'}
+          </span>
+        </div>
+
         {/* Mode selector */}
         <div>
           <label className="text-xs text-gray-500 mb-2 block" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -1412,7 +1419,7 @@ function PlaceMemberCard({
     } catch (e) {
       setPlaceError(e instanceof Error ? e.message : 'Error desconocido')
     } finally {
-      setLoading(false)
+      setPlacing(false)
     }
   }
 
@@ -1515,6 +1522,10 @@ function HoldingTankSection() {
   const [tankMembers, setTankMembers] = useState<TankMember[]>([])
   const [tankLoading, setTankLoading] = useState(true)
 
+  // Place all state
+  const [placeAllLoading, setPlaceAllLoading] = useState(false)
+  const [placeAllResult, setPlaceAllResult] = useState<string | null>(null)
+
   async function loadConfig() {
     setConfigLoading(true)
     try {
@@ -1609,10 +1620,28 @@ function HoldingTankSection() {
       if (rpcError) throw new Error(rpcError.message)
       setResult('Holding tank reiniciado. Usuarios colocados bajo sus patrocinadores.')
       await loadConfig()
+      await loadTankMembers()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error desconocido')
     } finally {
-      setLoading(false)
+      setResetLoading(false)
+    }
+  }
+
+  async function handlePlaceAll() {
+    setPlaceAllLoading(true)
+    setPlaceAllResult(null)
+    setError(null)
+    try {
+      const { data, error: rpcError } = await supabase.rpc('place_all_from_holding_tank')
+      if (rpcError) throw new Error(rpcError.message)
+      const count = (data as { placed_count?: number })?.placed_count ?? tankMembers.length
+      setPlaceAllResult(`${count} usuario${count !== 1 ? 's' : ''} colocado${count !== 1 ? 's' : ''} correctamente`)
+      await loadTankMembers()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al colocar usuarios')
+    } finally {
+      setPlaceAllLoading(false)
     }
   }
 
@@ -1620,6 +1649,33 @@ function HoldingTankSection() {
     <Card>
       <SectionLabel>Holding Tank — Control</SectionLabel>
       <div className="space-y-4">
+
+        {/* Place All button + count badge */}
+        <div className="space-y-3">
+          <button
+            onClick={handlePlaceAll}
+            disabled={placeAllLoading || tankMembers.length === 0}
+            className="flex items-center justify-center gap-2 w-full h-12 rounded-full text-base font-bold text-white disabled:opacity-60 transition-all active:scale-95 shadow-[0_4px_14px_rgba(6,42,99,0.25)]"
+            style={{ background: '#062A63', fontFamily: 'Poppins, sans-serif' }}
+          >
+            {placeAllLoading && <Spinner />}
+            {placeAllLoading ? 'Colocando usuarios...' : 'Colocar Todos'}
+          </button>
+          {placeAllResult && (
+            <div className="rounded-[18px] bg-green-50 border border-green-200 p-3 text-sm text-green-700 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              {placeAllResult}
+            </div>
+          )}
+          <div className="flex items-center justify-center">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold" style={{ background: 'rgba(6,42,99,0.08)', color: '#062A63', fontFamily: 'Poppins, sans-serif' }}>
+              <span className="w-2 h-2 rounded-full bg-[#0CBCE5]" />
+              {tankMembers.length} usuario{tankMembers.length !== 1 ? 's' : ''} en Holding Tank
+            </span>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="border-t border-[#EAECF0]" />
 
         {/* Current config */}
         {configLoading ? (
@@ -1709,7 +1765,7 @@ function HoldingTankSection() {
             className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold text-white disabled:opacity-60 transition-all active:scale-95"
             style={{ background: '#e53e3e', fontFamily: 'Poppins, sans-serif' }}
           >
-            Ejecutar Reinicio Ahora
+            Reiniciar Holding Tank
           </button>
         )}
 
